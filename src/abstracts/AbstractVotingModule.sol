@@ -6,6 +6,7 @@ import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
 import {IMockRecipientRegistry} from "../interfaces/IMockRecipientRegistry.sol";
 import {IDistributionModule} from "../interfaces/IDistributionModule.sol";
 import {ICycleModule} from "../interfaces/ICycleModule.sol";
+import {AbstractCycleModule} from "./AbstractCycleModule.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -46,21 +47,13 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @dev voter => nonce => used
     mapping(address => mapping(uint256 => bool)) public usedNonces;
 
-    /// @notice Tracks which cycle an account last voted in
-    /// @dev voter => cycle number
-    mapping(address => uint256) public accountLastVotedCycle;
+    /// @notice Tracks the block number when an account last voted
+    /// @dev voter => block number
+    mapping(address => uint256) public accountLastVotedBlock;
 
     /// @notice Total voting power used in each cycle
     /// @dev cycle => total voting power
     mapping(uint256 => uint256) public totalCycleVotingPower;
-
-    /// @notice Stores the voting power used by each voter in each cycle
-    /// @dev cycle => voter => voting power used
-    mapping(uint256 => mapping(address => uint256)) public voterCyclePower;
-
-    /// @notice Stores the vote points distribution for each voter in each cycle
-    /// @dev cycle => voter => array of points
-    mapping(uint256 => mapping(address => uint256[])) public voterCyclePoints;
 
     // ============ External References ============
 
@@ -183,28 +176,13 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @dev Used to determine if a vote would be a recast
     /// @param voter The address to check
     /// @return True if the voter has voted in the current cycle
-    function hasVotedInCurrentCycle(address voter) external view returns (bool) {
-        uint256 currentCycle = cycleModule.getCurrentCycle();
-        return voterCyclePower[currentCycle][voter] > 0;
+    function hasVotedInCurrentCycle(address voter) public view returns (bool) {
+        // Get the last cycle start block from the cycle module (cast to AbstractCycleModule to access)
+        uint256 cycleStartBlock = AbstractCycleModule(address(cycleModule)).lastCycleStartBlock();
+        // Voter has voted in current cycle if their last vote was at or after the cycle start
+        return accountLastVotedBlock[voter] >= cycleStartBlock && accountLastVotedBlock[voter] != 0;
     }
 
-    /// @notice Gets the voting power a voter used in a specific cycle
-    /// @dev Returns 0 if the voter hasn't voted in that cycle
-    /// @param cycle The cycle number to check
-    /// @param voter The voter's address
-    /// @return The voting power used by the voter in that cycle
-    function getVoterCyclePower(uint256 cycle, address voter) external view returns (uint256) {
-        return voterCyclePower[cycle][voter];
-    }
-
-    /// @notice Gets the points distribution a voter submitted in a specific cycle
-    /// @dev Returns empty array if the voter hasn't voted in that cycle
-    /// @param cycle The cycle number to check
-    /// @param voter The voter's address
-    /// @return Array of points the voter allocated in that cycle
-    function getVoterCyclePoints(uint256 cycle, address voter) external view returns (uint256[] memory) {
-        return voterCyclePoints[cycle][voter];
-    }
 
     /// @notice Gets the total voting power used in a specific cycle
     /// @dev Useful for calculating voting participation and weight
@@ -298,16 +276,8 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         return signer == voter && !usedNonces[voter][nonce];
     }
 
-    /// @notice Validates vote points distribution externally
-    /// @dev Public wrapper for internal validation logic
-    /// @param points Array of points to validate
-    /// @return True if points are valid, false otherwise
-    function validateVotePoints(uint256[] calldata points) public view virtual returns (bool) {
-        return _validateVotePoints(points);
-    }
-
     // ============ Gap for Upgradeable Contracts ============
 
     /// @dev Gap for future storage variables in upgradeable contracts
-    uint256[40] private __gap;
+    uint256[42] private __gap;
 }
