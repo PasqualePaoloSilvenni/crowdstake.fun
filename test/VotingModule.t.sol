@@ -325,7 +325,9 @@ contract VotingModuleTest is Test {
         votingModule.castVoteWithSignature(noTokensVoter, points, nonce, signature);
 
         // Verify vote was recorded but with zero power
-        assertTrue(votingModule.hasVotedInCurrentCycle(noTokensVoter), "NoTokensVoter should have voted in current cycle");
+        assertTrue(
+            votingModule.hasVotedInCurrentCycle(noTokensVoter), "NoTokensVoter should have voted in current cycle"
+        );
     }
 
     function testExceedsMaxPoints() public {
