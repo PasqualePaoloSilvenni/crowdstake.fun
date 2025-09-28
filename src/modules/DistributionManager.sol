@@ -96,7 +96,6 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
         }
     }
 
-
     /// @notice Modifier to restrict access to cycle manager
     modifier onlyCycleManager() {
         require(msg.sender == cycleManager, "Only cycle manager");

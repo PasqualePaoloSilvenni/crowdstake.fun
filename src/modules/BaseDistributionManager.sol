@@ -52,7 +52,7 @@ contract BaseDistributionManager is DistributionManager {
     function claimAndDistribute() external override {
         // Allow both owner and cycle manager to call this
         require(msg.sender == owner() || msg.sender == cycleManager, "Unauthorized");
-        
+
         if (!isDistributionReady()) revert DistributionNotReady();
         if (address(distributionStrategy) == address(0)) revert("No strategy set");
 
@@ -72,5 +72,4 @@ contract BaseDistributionManager is DistributionManager {
 
         emit YieldDistributed(address(distributionStrategy), yieldAmount);
     }
-
 }

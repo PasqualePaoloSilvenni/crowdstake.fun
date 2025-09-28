@@ -43,7 +43,7 @@ contract MultiStrategyDistributionManager is DistributionManager {
     function claimAndDistribute() external override {
         // Allow both owner and cycle manager to call this
         require(msg.sender == owner() || msg.sender == cycleManager, "Unauthorized");
-        
+
         if (!isDistributionReady()) revert DistributionNotReady();
         require(strategies.length > 0, "No strategies configured");
 
@@ -57,17 +57,17 @@ contract MultiStrategyDistributionManager is DistributionManager {
 
         // Calculate amount per strategy (equal distribution)
         uint256 amountPerStrategy = yieldAmount / strategies.length;
-        
+
         // Distribute to each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
             address strategy = strategies[i];
-            
+
             // Transfer tokens to strategy
             baseToken.safeTransfer(strategy, amountPerStrategy);
-            
+
             // Trigger distribution in strategy
             IDistributionStrategy(strategy).distribute(amountPerStrategy);
-            
+
             emit YieldDistributed(strategy, amountPerStrategy);
         }
     }

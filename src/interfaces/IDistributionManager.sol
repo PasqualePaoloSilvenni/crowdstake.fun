@@ -7,21 +7,21 @@ pragma solidity ^0.8.20;
 interface IDistributionManager {
     /// @notice Thrown when a zero address is provided where it's not allowed
     error ZeroAddress();
-    
+
     /// @notice Thrown when distribution conditions are not met
     /// @dev Distribution is not ready when voting power is 0 or yield < recipient count
     error DistributionNotReady();
-    
+
     /// @notice Thrown when there is no yield available to distribute
     error NoYieldAvailable();
-    
+
     /// @notice Thrown when an invalid amount (0) is provided
     error InvalidAmount();
 
     /// @notice Emitted when yield is claimed from the yield module
     /// @param amount The amount of yield claimed
     event YieldClaimed(uint256 amount);
-    
+
     /// @notice Emitted when yield is distributed to a strategy
     /// @param strategy The address of the strategy that received the yield
     /// @param amount The amount of yield distributed
