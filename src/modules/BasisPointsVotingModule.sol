@@ -22,6 +22,14 @@ contract BasisPointsVotingModule is AbstractVotingModule {
     /// @dev cycle => array of weighted votes per project
     mapping(uint256 => uint256[]) public projectDistributions;
 
+    /// @notice Tracks voting power used by each voter in each cycle
+    /// @dev cycle => voter => voting power used
+    mapping(uint256 => mapping(address => uint256)) public voterCyclePower;
+
+    /// @notice Tracks points allocated by each voter in each cycle
+    /// @dev cycle => voter => points array
+    mapping(uint256 => mapping(address => uint256[])) public voterCyclePoints;
+
     // ============ Constructor ============
 
     /// @notice Creates a new BasisPointsVotingModule instance
@@ -129,7 +137,7 @@ contract BasisPointsVotingModule is AbstractVotingModule {
     // ============ Internal Functions ============
 
     /// @notice Processes and records a vote
-    /// @dev Updates project distributions and cycle voting power. Handles vote recasting.
+    /// @dev Updates project distributions and cycle voting power. Handles vote recasting by replacing previous vote.
     /// @param voter Address of the voter
     /// @param points Array of points allocated to each recipient
     /// @param votingPower Total voting power of the voter
@@ -172,8 +180,8 @@ contract BasisPointsVotingModule is AbstractVotingModule {
             }
         }
 
-        // Update last voted cycle
-        accountLastVotedCycle[voter] = currentCycle;
+        // Update last voted block number
+        accountLastVotedBlock[voter] = block.number;
     }
 
     /// @notice Validates vote points distribution

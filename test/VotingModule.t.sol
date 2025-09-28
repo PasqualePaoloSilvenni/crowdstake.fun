@@ -152,7 +152,7 @@ contract VotingModuleTest is Test {
         votingModule.castVoteWithSignature(voter1, points, nonce, signature);
 
         // Verify vote was recorded by checking that the voter has voted
-        assertEq(votingModule.accountLastVotedCycle(voter1), cycleModule.getCurrentCycle());
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter1), "Voter1 should have voted in current cycle");
 
         uint256[] memory projectDist = votingModule.getCurrentVotingDistribution();
         assertEq(projectDist.length, 3);
@@ -178,7 +178,7 @@ contract VotingModuleTest is Test {
         votingModule.castVoteWithSignature(voter1, points, nonce, signature);
 
         // Verify vote was recorded
-        assertEq(votingModule.accountLastVotedCycle(voter1), cycleModule.getCurrentCycle());
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter1), "Voter1 should have voted in current cycle");
 
         // Verify nonce was used
         assertTrue(votingModule.isNonceUsed(voter1, nonce));
@@ -222,8 +222,8 @@ contract VotingModuleTest is Test {
         votingModule.castBatchVotesWithSignature(voters, pointsArray, nonces, signatures);
 
         // Verify both votes were recorded
-        assertEq(votingModule.accountLastVotedCycle(voter1), cycleModule.getCurrentCycle());
-        assertEq(votingModule.accountLastVotedCycle(voter2), cycleModule.getCurrentCycle());
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter1), "Voter1 should have voted in current cycle");
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter2), "Voter2 should have voted in current cycle");
     }
 
     function testVoteRecasting() public {
@@ -238,7 +238,7 @@ contract VotingModuleTest is Test {
         votingModule.castVoteWithSignature(voter1, points1, nonce1, signature1);
 
         // Verify vote was recorded
-        assertEq(votingModule.accountLastVotedCycle(voter1), cycleModule.getCurrentCycle());
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter1), "Voter1 should have voted in current cycle");
 
         // Get voting power for calculations
         uint256 votingPower = votingModule.getVotingPower(voter1);
@@ -252,18 +252,18 @@ contract VotingModuleTest is Test {
         // Advance block to ensure timestamps differ
         vm.roll(block.number + 1);
 
-        // Cast second vote with different distribution - should replace previous vote
+        // Cast second vote with different distribution - should succeed and add to existing votes
         uint256[] memory points2 = new uint256[](3);
         points2[0] = 60;
         points2[1] = 25;
         points2[2] = 15;
 
-        // Second vote should succeed and replace the first vote
+        // Second vote should succeed since recasting is allowed
         uint256 nonce2 = 2;
         bytes memory signature2 = createVoteSignature(voter1, voter1PrivateKey, points2, nonce2);
         votingModule.castVoteWithSignature(voter1, points2, nonce2, signature2);
 
-        // Verify the vote was replaced, not added
+        // Verify the vote was replaced, not added (second vote replaces first)
         uint256[] memory dist2 = votingModule.getCurrentVotingDistribution();
         assertEq(dist2[0], (votingPower * 60) / 1e18, "First project should have new allocation");
         assertEq(dist2[1], (votingPower * 25) / 1e18, "Second project should have new allocation");
@@ -325,7 +325,7 @@ contract VotingModuleTest is Test {
         votingModule.castVoteWithSignature(noTokensVoter, points, nonce, signature);
 
         // Verify vote was recorded but with zero power
-        assertEq(votingModule.accountLastVotedCycle(noTokensVoter), cycleModule.getCurrentCycle());
+        assertTrue(votingModule.hasVotedInCurrentCycle(noTokensVoter), "NoTokensVoter should have voted in current cycle");
     }
 
     function testExceedsMaxPoints() public {
@@ -403,9 +403,10 @@ contract VotingModuleTest is Test {
         bytes memory signature2 = createVoteSignature(voter2, voter2PrivateKey, points, nonce2);
         votingModule.castVoteWithSignature(voter2, points, nonce2, signature2);
 
-        // Check that votes are recorded in different cycles
-        assertEq(votingModule.accountLastVotedCycle(voter1), 1);
-        assertEq(votingModule.accountLastVotedCycle(voter2), 2);
+        // Check that votes are recorded properly - voter1 voted in cycle 1, voter2 in cycle 2
+        // Since we're now in cycle 2, voter1 should not be in current cycle but voter2 should be
+        assertFalse(votingModule.hasVotedInCurrentCycle(voter1), "Voter1 should not have voted in current cycle");
+        assertTrue(votingModule.hasVotedInCurrentCycle(voter2), "Voter2 should have voted in current cycle");
         assertEq(cycleModule.getCurrentCycle(), 2);
     }
 

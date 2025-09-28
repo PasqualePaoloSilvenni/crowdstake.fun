@@ -180,7 +180,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         // Get the last cycle start block from the cycle module (cast to AbstractCycleModule to access)
         uint256 cycleStartBlock = AbstractCycleModule(address(cycleModule)).lastCycleStartBlock();
         // Voter has voted in current cycle if their last vote was at or after the cycle start
-        return accountLastVotedBlock[voter] >= cycleStartBlock && accountLastVotedBlock[voter] != 0;
+        return accountLastVotedBlock[voter] >= cycleStartBlock;
     }
 
 
