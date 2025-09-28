@@ -183,7 +183,6 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         return accountLastVotedBlock[voter] >= cycleStartBlock;
     }
 
-
     /// @notice Gets the total voting power used in a specific cycle
     /// @dev Useful for calculating voting participation and weight
     /// @param cycle The cycle number to check
