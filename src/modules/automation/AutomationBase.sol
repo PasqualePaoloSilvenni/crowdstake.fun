@@ -6,7 +6,7 @@ import "../../interfaces/IDistributionManager.sol";
 /// @title AutomationBase
 /// @notice Abstract base contract for automation providers
 /// @dev Inherit this contract to create provider-specific automation implementations
-abstract contract AutomationBase is IDistributionManager {
+abstract contract AutomationBase {
     IDistributionManager public immutable distributionManager;
 
     event AutomationExecuted(address indexed executor, uint256 blockNumber);
@@ -21,7 +21,7 @@ abstract contract AutomationBase is IDistributionManager {
     /// @notice Checks if distribution is ready
     /// @dev Delegates to DistributionManager for condition checking
     /// @return ready Whether the distribution conditions are met
-    function isDistributionReady() public view virtual override returns (bool ready) {
+    function isDistributionReady() public view virtual returns (bool ready) {
         return distributionManager.isDistributionReady();
     }
 
@@ -38,10 +38,10 @@ abstract contract AutomationBase is IDistributionManager {
 
     /// @notice Executes the distribution
     /// @dev Delegates to DistributionManager for execution
-    function executeDistribution() public virtual override {
+    function executeDistribution() public virtual {
         if (!distributionManager.isDistributionReady()) revert NotResolved();
 
-        distributionManager.executeDistribution();
+        distributionManager.claimAndDistribute();
 
         emit AutomationExecuted(msg.sender, block.number);
     }

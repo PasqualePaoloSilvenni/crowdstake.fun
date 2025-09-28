@@ -3,14 +3,36 @@ pragma solidity ^0.8.20;
 
 /// @title IDistributionManager
 /// @notice Interface for managing distribution readiness and execution
-/// @dev Handles distribution state and execution logic
+/// @dev Handles distribution state and execution logic with error and event definitions
 interface IDistributionManager {
+    /// @notice Thrown when a zero address is provided where it's not allowed
+    error ZeroAddress();
+    
+    /// @notice Thrown when distribution conditions are not met
+    /// @dev Distribution is not ready when voting power is 0 or yield < recipient count
+    error DistributionNotReady();
+    
+    /// @notice Thrown when there is no yield available to distribute
+    error NoYieldAvailable();
+    
+    /// @notice Thrown when an invalid amount (0) is provided
+    error InvalidAmount();
+
+    /// @notice Emitted when yield is claimed from the yield module
+    /// @param amount The amount of yield claimed
+    event YieldClaimed(uint256 amount);
+    
+    /// @notice Emitted when yield is distributed to a strategy
+    /// @param strategy The address of the strategy that received the yield
+    /// @param amount The amount of yield distributed
+    event YieldDistributed(address indexed strategy, uint256 amount);
+
     /// @notice Checks if the distribution is ready to be executed
     /// @dev Contains all logic to determine if conditions are met
     /// @return ready Whether the distribution conditions are met
     function isDistributionReady() external view returns (bool ready);
 
-    /// @notice Executes the distribution
-    /// @dev Handles all distribution logic including yield calculation and transfers
-    function executeDistribution() external;
+    /// @notice Claims yield from the base token and distributes it
+    /// @dev Implementation varies by concrete manager type
+    function claimAndDistribute() external;
 }

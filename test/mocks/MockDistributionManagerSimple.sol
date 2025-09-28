@@ -23,7 +23,7 @@ contract MockDistributionManagerSimple is IDistributionManager {
     }
 
     /// @notice Mock execution that simply updates the last distribution block
-    function executeDistribution() external override {
+    function claimAndDistribute() external override {
         require(block.number >= lastDistributionBlock + BLOCKS_PER_CYCLE, "Not ready");
 
         lastDistributionBlock = block.number;
