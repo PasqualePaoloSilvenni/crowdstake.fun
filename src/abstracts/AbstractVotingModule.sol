@@ -135,7 +135,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param voter The voter's address
     /// @param nonce The nonce to check
     /// @return True if the nonce has been used, false otherwise
-    function isNonceUsed(address voter, uint256 nonce) external view virtual returns (bool) {
+    function isNonceUsed(address voter, uint256 nonce) public view virtual returns (bool) {
         return usedNonces[voter][nonce];
     }
 
@@ -210,7 +210,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         internal
     {
         // Check nonce hasn't been used
-        if (usedNonces[voter][nonce]) revert NonceAlreadyUsed();
+        if (isNonceUsed(voter, nonce)) revert NonceAlreadyUsed();
 
         // Verify signature
         bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
