@@ -213,10 +213,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         if (isNonceUsed(voter, nonce)) revert NonceAlreadyUsed();
 
         // Verify signature
-        bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
-        bytes32 hash = _hashTypedDataV4(structHash);
-        address signer = hash.recover(signature);
-        if (signer != voter) revert InvalidSignature();
+        if (!validateSignature(voter, points, nonce, signature)) revert InvalidSignature();
 
         // Mark nonce as used after validation
         usedNonces[voter][nonce] = true;
@@ -279,7 +276,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = hash.recover(signature);
-        return signer == voter && !usedNonces[voter][nonce];
+        return signer == voter;
     }
 
     // ============ Gap for Upgradeable Contracts ============
