@@ -33,6 +33,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
     /// @notice EIP-712 typehash for vote signature verification
     /// @dev Keccak256 hash of the Vote type structure for EIP-712 signing
+    /// @dev keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)") = 0x75bc59ee506a0b0e949fb3a7df4ed9c67afe07055fed85f523f130ba4f0bfaea
     bytes32 public constant VOTE_TYPEHASH = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
 
     // ============ Storage Variables ============
