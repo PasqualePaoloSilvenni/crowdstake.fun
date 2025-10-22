@@ -258,6 +258,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param points Array of points to validate
     /// @return True if points are valid, false otherwise
     function _validateVotePoints(uint256[] calldata points) internal view virtual returns (bool);
+
     // Note: This is now an abstract function that must be implemented by concrete modules
 
     /// @notice Validates a vote signature
