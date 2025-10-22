@@ -23,6 +23,12 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
     // ============ Constants ============
 
+    /// @notice EIP-712 domain name for signature verification
+    string private constant EIP712_NAME = "BreadKit Voting";
+
+    /// @notice EIP-712 domain version for signature verification
+    string private constant EIP712_VERSION = "1";
+
     /// @notice Precision factor for calculations to avoid rounding errors
     /// @dev Used in vote weight calculations to maintain precision
     uint256 public constant PRECISION = 1e18;
@@ -89,7 +95,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     ) internal onlyInitializing {
         if (_strategies.length == 0) revert NoStrategiesProvided();
 
-        __EIP712_init("BreadKit Voting", "1");
+        __EIP712_init(EIP712_NAME, EIP712_VERSION);
         __Ownable_init(msg.sender);
 
         distributionModule = IDistributionModule(_distributionModule);
