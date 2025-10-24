@@ -161,18 +161,14 @@ contract BasisPointsVotingModule is AbstractVotingModule {
         // Apply new vote
         totalCycleVotingPower[currentCycle] += votingPower;
 
-        // Store voter's current voting power and points for potential future recasting
+        // Store voter's current voting power and points, and update project distributions
         voterCyclePower[currentCycle][voter] = votingPower;
         delete voterCyclePoints[currentCycle][voter]; // Clear previous points array
         for (uint256 i = 0; i < points.length; i++) {
             voterCyclePoints[currentCycle][voter].push(points[i]);
-        }
 
-        // Calculate and update project distributions with new vote
-        for (uint256 i = 0; i < points.length; i++) {
+            // Calculate and update project distributions in same loop for gas efficiency
             uint256 allocation = (votingPower * points[i]) / PRECISION;
-
-            // Update project distributions
             if (i >= projectDistributions[currentCycle].length) {
                 projectDistributions[currentCycle].push(allocation);
             } else {
