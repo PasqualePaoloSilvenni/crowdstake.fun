@@ -12,6 +12,3 @@ docs/
 
 # Dotenv file
 .env
-
-# Reference repository cloned for development context
-breadchain/
