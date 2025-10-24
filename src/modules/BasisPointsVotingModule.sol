@@ -89,9 +89,9 @@ contract BasisPointsVotingModule is AbstractVotingModule {
         bytes[] calldata signatures
     ) external {
         // Validate array lengths match
-        if (voters.length != points.length || voters.length != nonces.length || voters.length != signatures.length) {
-            revert ArrayLengthMismatch();
-        }
+        if (voters.length != points.length) revert ArrayLengthMismatch();
+        if (voters.length != nonces.length) revert ArrayLengthMismatch();
+        if (voters.length != signatures.length) revert ArrayLengthMismatch();
 
         // Check batch size limit
         if (voters.length > MAX_BATCH_SIZE) {
