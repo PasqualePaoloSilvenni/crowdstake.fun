@@ -6,7 +6,6 @@ import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
 import {IMockRecipientRegistry} from "../interfaces/IMockRecipientRegistry.sol";
 import {IDistributionModule} from "../interfaces/IDistributionModule.sol";
 import {ICycleModule} from "../interfaces/ICycleModule.sol";
-import {AbstractCycleModule} from "./AbstractCycleModule.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -184,8 +183,8 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param voter The address to check
     /// @return True if the voter has voted in the current cycle
     function hasVotedInCurrentCycle(address voter) public view returns (bool) {
-        // Get the last cycle start block from the cycle module (cast to AbstractCycleModule to access)
-        uint256 cycleStartBlock = AbstractCycleModule(address(cycleModule)).lastCycleStartBlock();
+        // Get the last cycle start block from the cycle module
+        uint256 cycleStartBlock = cycleModule.lastCycleStartBlock();
         // Voter has voted in current cycle if their last vote was at or after the cycle start
         return accountLastVotedBlock[voter] >= cycleStartBlock;
     }
