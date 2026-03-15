@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {BasisPointsVotingModule} from "../src/modules/BasisPointsVotingModule.sol";
-import {AbstractVotingModule} from "../src/abstracts/AbstractVotingModule.sol";
 import {IVotingModule} from "../src/interfaces/IVotingModule.sol";
 import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingPower.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
@@ -12,10 +11,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
-import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
 import {CycleModule} from "../src/CycleModule.sol";
-import {ICycleModule} from "../src/interfaces/ICycleModule.sol";
 
 // Mock token implementation for testing
 contract MockToken is ERC20, ERC20Votes, ERC20Permit {
@@ -245,9 +242,10 @@ contract VotingModuleTest is Test {
 
         // Get initial distribution and verify it matches expected values
         uint256[] memory dist1 = votingModule.getCurrentVotingDistribution();
-        assertEq(dist1[0], (votingPower * 50) / 1e18, "First project should have correct allocation");
-        assertEq(dist1[1], (votingPower * 30) / 1e18, "Second project should have correct allocation");
-        assertEq(dist1[2], (votingPower * 20) / 1e18, "Third project should have correct allocation");
+        uint256 totalPoints1 = 100; // 50 + 30 + 20
+        assertEq(dist1[0], (50 * votingPower * 1e18) / totalPoints1 / 1e18, "First project should have correct allocation");
+        assertEq(dist1[1], (30 * votingPower * 1e18) / totalPoints1 / 1e18, "Second project should have correct allocation");
+        assertEq(dist1[2], (20 * votingPower * 1e18) / totalPoints1 / 1e18, "Third project should have correct allocation");
 
         // Advance block to ensure timestamps differ
         vm.roll(block.number + 1);
@@ -265,9 +263,10 @@ contract VotingModuleTest is Test {
 
         // Verify the vote was replaced, not added (second vote replaces first)
         uint256[] memory dist2 = votingModule.getCurrentVotingDistribution();
-        assertEq(dist2[0], (votingPower * 60) / 1e18, "First project should have new allocation");
-        assertEq(dist2[1], (votingPower * 25) / 1e18, "Second project should have new allocation");
-        assertEq(dist2[2], (votingPower * 15) / 1e18, "Third project should have new allocation");
+        uint256 totalPoints2 = 100; // 60 + 25 + 15
+        assertEq(dist2[0], (60 * votingPower * 1e18) / totalPoints2 / 1e18, "First project should have new allocation");
+        assertEq(dist2[1], (25 * votingPower * 1e18) / totalPoints2 / 1e18, "Second project should have new allocation");
+        assertEq(dist2[2], (15 * votingPower * 1e18) / totalPoints2 / 1e18, "Third project should have new allocation");
     }
 
     function testNonceReplayProtection() public {
@@ -331,13 +330,14 @@ contract VotingModuleTest is Test {
     }
 
     function testExceedsMaxPoints() public {
-        uint256[] memory points = new uint256[](2);
+        uint256[] memory points = new uint256[](3);
         points[0] = MAX_POINTS + 1; // Exceeds max
         points[1] = 50;
+        points[2] = 50;
 
         uint256 nonce = 1;
         bytes memory signature = createVoteSignature(voter1, voter1PrivateKey, points, nonce);
-        vm.expectRevert(IVotingModule.InvalidPointsDistribution.selector);
+        vm.expectRevert(IVotingModule.ExceedsMaxPoints.selector);
         votingModule.castVoteWithSignature(voter1, points, nonce, signature);
     }
 
@@ -349,7 +349,7 @@ contract VotingModuleTest is Test {
 
         uint256 nonce = 1;
         bytes memory signature = createVoteSignature(voter1, voter1PrivateKey, points, nonce);
-        vm.expectRevert(IVotingModule.InvalidPointsDistribution.selector);
+        vm.expectRevert(IVotingModule.ZeroVotePoints.selector);
         votingModule.castVoteWithSignature(voter1, points, nonce, signature);
     }
 
@@ -439,9 +439,9 @@ contract VotingModuleTest is Test {
     // Helper functions
 
     function _createVoteDigest(address voter, uint256[] memory points, uint256 nonce) internal view returns (bytes32) {
-        bytes32 VOTE_TYPEHASH = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
+        bytes32 voteTypehash = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
 
-        bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
+        bytes32 structHash = keccak256(abi.encode(voteTypehash, voter, keccak256(abi.encodePacked(points)), nonce));
 
         return keccak256(abi.encodePacked("\x19\x01", votingModule.DOMAIN_SEPARATOR(), structHash));
     }

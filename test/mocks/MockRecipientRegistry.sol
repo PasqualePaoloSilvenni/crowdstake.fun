@@ -124,6 +124,9 @@ contract MockRecipientRegistry is IRecipientRegistry {
 
     // Helper function for testing
     function setActiveRecipients(address[] memory _recipients) external {
+        for (uint256 i = 0; i < activeRecipients.length; i++) {
+            _isRecipient[activeRecipients[i]] = false;
+        }
         delete activeRecipients;
         for (uint256 i = 0; i < _recipients.length; i++) {
             activeRecipients.push(_recipients[i]);

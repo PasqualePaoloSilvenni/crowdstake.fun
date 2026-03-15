@@ -152,14 +152,25 @@ contract BasisPointsVotingModule is AbstractVotingModule {
 
             // Revert previous vote's impact on project distributions
             uint256[] storage previousPoints = voterCyclePoints[currentCycle][voter];
+            uint256 previousTotalPoints;
             for (uint256 i = 0; i < previousPoints.length; i++) {
-                uint256 previousAllocation = (previousVotingPower * previousPoints[i]) / PRECISION;
+                previousTotalPoints += previousPoints[i];
+            }
+            for (uint256 i = 0; i < previousPoints.length; i++) {
+                uint256 previousAllocation =
+                    (previousPoints[i] * previousVotingPower * PRECISION) / previousTotalPoints / PRECISION;
                 projectDistributions[currentCycle][i] -= previousAllocation;
             }
         }
 
         // Apply new vote
         totalCycleVotingPower[currentCycle] += votingPower;
+
+        // Compute total points for proportional allocation
+        uint256 totalPoints;
+        for (uint256 i = 0; i < points.length; i++) {
+            totalPoints += points[i];
+        }
 
         // Store voter's current voting power and points, and update project distributions
         voterCyclePower[currentCycle][voter] = votingPower;
@@ -168,7 +179,7 @@ contract BasisPointsVotingModule is AbstractVotingModule {
             voterCyclePoints[currentCycle][voter].push(points[i]);
 
             // Calculate and update project distributions in same loop for gas efficiency
-            uint256 allocation = (votingPower * points[i]) / PRECISION;
+            uint256 allocation = (points[i] * votingPower * PRECISION) / totalPoints / PRECISION;
             if (i >= projectDistributions[currentCycle].length) {
                 projectDistributions[currentCycle].push(allocation);
             } else {
@@ -193,11 +204,13 @@ contract BasisPointsVotingModule is AbstractVotingModule {
 
         uint256 totalPoints;
         for (uint256 i = 0; i < points.length; i++) {
-            if (points[i] > maxPoints) return false;
+            if (points[i] > maxPoints) revert ExceedsMaxPoints();
             totalPoints += points[i];
         }
 
-        return totalPoints > 0;
+        if (totalPoints == 0) revert ZeroVotePoints();
+
+        return true;
     }
 
     // Issue #43: Store required votes at proposal creation in VotingRecipientRegistry

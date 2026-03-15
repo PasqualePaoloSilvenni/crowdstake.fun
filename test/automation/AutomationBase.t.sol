@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "../../src/modules/automation/ChainlinkAutomation.sol";
+import {Test} from "forge-std/Test.sol";
+import {ChainlinkAutomation} from "../../src/modules/automation/ChainlinkAutomation.sol";
+import {AutomationBase} from "../../src/modules/automation/AutomationBase.sol";
 // import "../../src/modules/automation/GelatoAutomation.sol";
-import "../mocks/MockDistributionManager.sol";
-import "../../src/interfaces/IDistributionModule.sol";
+import {MockDistributionManager} from "../mocks/MockDistributionManager.sol";
+import {IDistributionModule} from "../../src/interfaces/IDistributionModule.sol";
 
 contract MockDistributionModule is IDistributionModule {
     uint256 public distributeCallCount;

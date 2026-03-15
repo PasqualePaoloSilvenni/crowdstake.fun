@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "../interfaces/IRecipientRegistry.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
 
 /// @title BaseRecipientRegistry
 /// @notice Abstract base contract for managing yield recipients with queued changes

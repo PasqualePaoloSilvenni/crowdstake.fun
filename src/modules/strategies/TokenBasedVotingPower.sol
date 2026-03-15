@@ -20,19 +20,19 @@ contract TokenBasedVotingPower is IVotingPowerStrategy {
 
     /// @notice The ERC20Votes token used for voting power calculation
     /// @dev Must implement the IVotes interface from OpenZeppelin
-    IVotes public immutable votingToken;
+    IVotes public immutable VOTING_TOKEN;
 
     /// @notice Constructs the token-based voting power strategy
     /// @dev Reverts if token address is zero
     /// @param _votingToken The ERC20Votes token to use for voting power calculation
     constructor(IVotes _votingToken) {
         if (address(_votingToken) == address(0)) revert InvalidToken();
-        votingToken = _votingToken;
+        VOTING_TOKEN = _votingToken;
     }
 
     /// @inheritdoc IVotingPowerStrategy
     function getCurrentVotingPower(address account) external view override returns (uint256) {
         // Use delegated votes (or balance if not delegated) for voting power
-        return votingToken.getVotes(account);
+        return VOTING_TOKEN.getVotes(account);
     }
 }

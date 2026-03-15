@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {BasisPointsVotingModule} from "../src/modules/BasisPointsVotingModule.sol";
-import {AbstractVotingModule} from "../src/abstracts/AbstractVotingModule.sol";
 import {IVotingModule} from "../src/interfaces/IVotingModule.sol";
 import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingPower.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
-import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CycleModule} from "../src/CycleModule.sol";
-import {ICycleModule} from "../src/interfaces/ICycleModule.sol";
 
 // Simple mock token for testing (non-upgradeable)
 contract MockToken is IVotes {
@@ -328,9 +324,9 @@ contract VotingModuleSimpleTest is Test {
 
     // Helper function
     function _createVoteDigest(address voter, uint256[] memory points, uint256 nonce) internal view returns (bytes32) {
-        bytes32 VOTE_TYPEHASH = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
+        bytes32 voteTypehash = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
 
-        bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
+        bytes32 structHash = keccak256(abi.encode(voteTypehash, voter, keccak256(abi.encodePacked(points)), nonce));
 
         return keccak256(abi.encodePacked("\x19\x01", votingModule.DOMAIN_SEPARATOR(), structHash));
     }

@@ -271,6 +271,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         public
         view
         virtual
+        override
         returns (bool)
     {
         bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));

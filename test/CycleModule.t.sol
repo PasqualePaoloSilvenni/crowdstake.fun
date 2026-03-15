@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "../src/CycleModule.sol";
-import "../src/abstracts/AbstractCycleModule.sol";
+import {Test} from "forge-std/Test.sol";
+import {CycleModule} from "../src/CycleModule.sol";
+import {AbstractCycleModule} from "../src/abstracts/AbstractCycleModule.sol";
 
 contract CycleModuleTest is Test {
     CycleModule public cycleModule;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "./mocks/MockDistributionManagerSimple.sol";
+import {Test} from "forge-std/Test.sol";
+import {MockDistributionManagerSimple} from "./mocks/MockDistributionManagerSimple.sol";
 
 contract MockDistributionManagerTest is Test {
     MockDistributionManagerSimple public manager;
