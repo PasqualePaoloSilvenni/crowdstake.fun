@@ -1,0 +1,14 @@
+{
+  "lib/chainlink": {
+    "rev": "b54dfa99b7f6e0d33098315a189ab98e10dca67c"
+  },
+  "lib/forge-std": {
+    "rev": "0c71116a218268ee8c0157be8efcb13af0f7beaf"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "62164b46517484f5b734d2c0e7e647de058685bf"
+  },
+  "lib/solady": {
+    "rev": "834bbc4fd366ca8bce8c532a0e3b34eca6be709c"
+  }
+}
