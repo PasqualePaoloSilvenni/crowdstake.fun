@@ -9,10 +9,6 @@ interface ICycleModule {
     /// @return The current cycle number
     function getCurrentCycle() external view returns (uint256);
 
-    /// @notice Gets the block number when the current cycle started
-    /// @return The block number when the current cycle started
-    function lastCycleStartBlock() external view returns (uint256);
-
     /// @notice Checks if the current cycle has completed
     /// @return Whether the cycle timing allows for transition
     function isCycleComplete() external view returns (bool);

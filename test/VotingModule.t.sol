@@ -12,7 +12,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
-import {IMockRecipientRegistry} from "../src/interfaces/IMockRecipientRegistry.sol";
+import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
 import {CycleModule} from "../src/CycleModule.sol";
 import {ICycleModule} from "../src/interfaces/ICycleModule.sol";

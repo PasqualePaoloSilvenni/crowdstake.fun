@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IVotingModule} from "../interfaces/IVotingModule.sol";
 import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
-import {IMockRecipientRegistry} from "../interfaces/IMockRecipientRegistry.sol";
+import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
 import {IDistributionModule} from "../interfaces/IDistributionModule.sol";
 import {ICycleModule} from "../interfaces/ICycleModule.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
@@ -23,7 +23,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     // ============ Constants ============
 
     /// @notice EIP-712 domain name for signature verification
-    string private constant EIP712_NAME = "BreadKit Voting";
+    string private constant EIP712_NAME = "CrowdstakingVoting";
 
     /// @notice EIP-712 domain version for signature verification
     string private constant EIP712_VERSION = "1";
@@ -34,7 +34,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
     /// @notice Maximum number of votes that can be cast in a single batch transaction
     /// @dev Prevents gas limit issues and potential DOS attacks
-    uint256 public constant MAX_BATCH_SIZE = 50;
+    uint256 public constant MAX_BATCH_SIZE = 200;
 
     /// @notice EIP-712 typehash for vote signature verification
     /// @dev Keccak256 hash of the Vote type structure for EIP-712 signing
@@ -69,7 +69,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
     /// @notice Reference to the recipient registry for validation
     /// @dev Maintains the list of valid recipients that can receive votes
-    IMockRecipientRegistry public recipientRegistry;
+    IRecipientRegistry public recipientRegistry;
 
     /// @notice Reference to the cycle module for cycle management
     /// @dev Manages voting cycles and transitions between periods
@@ -98,7 +98,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         __Ownable_init(msg.sender);
 
         distributionModule = IDistributionModule(_distributionModule);
-        recipientRegistry = IMockRecipientRegistry(_recipientRegistry);
+        recipientRegistry = IRecipientRegistry(_recipientRegistry);
         cycleModule = ICycleModule(_cycleModule);
 
         for (uint256 i = 0; i < _strategies.length; i++) {
@@ -150,7 +150,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @return The number of active recipients
     function getExpectedPointsLength() external view returns (uint256) {
         if (address(recipientRegistry) == address(0)) revert RecipientRegistryNotSet();
-        return recipientRegistry.getActiveRecipientsCount();
+        return recipientRegistry.getRecipientCount();
     }
 
     // ============ Getter Functions ============
@@ -211,6 +211,9 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         // Check nonce hasn't been used
         if (isNonceUsed(voter, nonce)) revert NonceAlreadyUsed();
 
+        // Validate points early to fail fast before expensive signature recovery
+        if (!_validateVotePoints(points)) revert InvalidPointsDistribution();
+
         // Verify signature
         if (!validateSignature(voter, points, nonce, signature)) revert InvalidSignature();
 
@@ -219,9 +222,6 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
         // Get voting power from the voting strategy
         uint256 votingPower = _calculateTotalVotingPower(voter);
-
-        // Validate points
-        if (!_validateVotePoints(points)) revert InvalidPointsDistribution();
 
         // Process vote
         _processVote(voter, points, votingPower);

@@ -8,7 +8,7 @@ import {IVotingModule} from "../src/interfaces/IVotingModule.sol";
 import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingPower.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
-import {IMockRecipientRegistry} from "../src/interfaces/IMockRecipientRegistry.sol";
+import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CycleModule} from "../src/CycleModule.sol";
