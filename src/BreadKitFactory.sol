@@ -32,7 +32,13 @@ contract BreadKitFactory is Ownable {
             revert NotWhitelistedBeacon();
         }
 
-        bytes32 salt = keccak256(abi.encode(msg.sender, salt_));
+        bytes32 salt;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, caller())
+            mstore(add(ptr, 0x20), salt_)
+            salt := keccak256(ptr, 0x40)
+        }
         bytes memory bytecode = _getTokenInitCode(beacon_, payload_);
         assembly {
             token := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
@@ -50,7 +56,13 @@ contract BreadKitFactory is Ownable {
         bytes32 salt_
     ) external returns (address yieldClaimer) {
         bytes memory bytecode = _getYieldDistributorInitCode(token_, initialRecipients_, percentVoted_, owner_);
-        bytes32 salt = keccak256(abi.encode(msg.sender, salt_));
+        bytes32 salt;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, caller())
+            mstore(add(ptr, 0x20), salt_)
+            salt := keccak256(ptr, 0x40)
+        }
         assembly {
             yieldClaimer := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
         }
@@ -106,7 +118,13 @@ contract BreadKitFactory is Ownable {
         returns (address token)
     {
         bytes memory bytecode = _getTokenInitCode(beacon_, payload_);
-        bytes32 salt = keccak256(abi.encode(msg.sender, salt_));
+        bytes32 salt;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, caller())
+            mstore(add(ptr, 0x20), salt_)
+            salt := keccak256(ptr, 0x40)
+        }
         token = _getCreate2Address(salt, keccak256(bytecode));
     }
 
@@ -118,7 +136,13 @@ contract BreadKitFactory is Ownable {
         bytes32 salt_
     ) external view returns (address yieldClaimer) {
         bytes memory bytecode = _getYieldDistributorInitCode(token_, initialRecipients_, percentVoted_, owner_);
-        bytes32 salt = keccak256(abi.encode(msg.sender, salt_));
+        bytes32 salt;
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, caller())
+            mstore(add(ptr, 0x20), salt_)
+            salt := keccak256(ptr, 0x40)
+        }
         yieldClaimer = _getCreate2Address(salt, keccak256(bytecode));
     }
 

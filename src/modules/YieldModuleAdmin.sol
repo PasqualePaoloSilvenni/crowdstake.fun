@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "../interfaces/IYieldModuleAdmin.sol";
+import {IYieldModuleAdmin} from "../interfaces/IYieldModuleAdmin.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title YieldModuleAdmin
 /// @notice Admin extension of the yield module that adds administrative functions
 /// @dev This module inherits from YieldModule and adds admin-only functions
 abstract contract YieldModuleAdmin is IYieldModuleAdmin, OwnableUpgradeable {
+    using SafeERC20 for IERC20;
     /// @notice The address authorized to claim yield
     address public yieldClaimer;
 
@@ -34,7 +36,7 @@ abstract contract YieldModuleAdmin is IYieldModuleAdmin, OwnableUpgradeable {
     function rescueToken(address token, uint256 amount) external onlyOwner {
         require(token != address(0), "YieldModuleAdmin: zero address");
         require(amount > 0, "YieldModuleAdmin: zero amount");
-        IERC20(token).transfer(owner(), amount);
+        IERC20(token).safeTransfer(owner(), amount);
         emit TokenRescued(token, amount);
     }
 

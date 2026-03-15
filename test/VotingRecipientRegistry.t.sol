@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/Test.sol";
 import {TestWrapper} from "./TestWrapper.sol";
 import {VotingRecipientRegistry} from "../src/modules/VotingRecipientRegistry.sol";
-import {BaseRecipientRegistry} from "../src/modules/BaseRecipientRegistry.sol";
 import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 
 contract VotingRecipientRegistryTest is TestWrapper {
@@ -290,7 +288,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
 
         // New recipient can now propose
         vm.prank(NEW_RECIPIENT);
-        uint256 newProposalId = registry.proposeAddition(address(0x99));
+        registry.proposeAddition(address(0x99));
 
         // Now need 4 votes (including new recipient)
         // TODO: Commented out pending resolution of issue #43
@@ -305,7 +303,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
         newRegistry.initialize(ADMIN, empty, 7 days);
     }
 
-    function test_ProposalExpiryConfiguration() public {
+    function test_ProposalExpiryConfiguration() public view {
         // Test that proposal expiry is set correctly during initialization
         assertEq(registry.proposalExpiry(), 7 days);
     }

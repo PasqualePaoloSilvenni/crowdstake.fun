@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./abstracts/AbstractCycleModule.sol";
+import {AbstractCycleModule} from "./abstracts/AbstractCycleModule.sol";
 
 /// @title CycleModule
 /// @notice Concrete implementation of the cycle module

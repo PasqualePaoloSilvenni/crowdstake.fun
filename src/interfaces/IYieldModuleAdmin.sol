@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./IYieldModule.sol";
+import {IYieldModule} from "./IYieldModule.sol";
 
 /// @title IYieldModuleAdmin
 /// @notice Interface for the admin functions of the yield module

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./AutomationBase.sol";
+import {AutomationBase} from "./AutomationBase.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
 /// @title ChainlinkAutomation
@@ -12,11 +12,14 @@ contract ChainlinkAutomation is AutomationBase, AutomationCompatibleInterface {
 
     /// @notice Chainlink-compatible upkeep check
     /// @dev Called by Chainlink nodes to check if work needs to be performed
-    /// @param checkData Not used but required by Chainlink interface
+    /// @dev checkData is not used but required by Chainlink interface
     /// @return upkeepNeeded Whether upkeep is needed
     /// @return performData The data to pass to performUpkeep
-    function checkUpkeep(bytes calldata checkData)
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
         external
+        view
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
@@ -26,8 +29,13 @@ contract ChainlinkAutomation is AutomationBase, AutomationCompatibleInterface {
 
     /// @notice Chainlink-compatible upkeep execution
     /// @dev Called by Chainlink nodes when checkUpkeep returns true
-    /// @param performData The data returned by checkUpkeep
-    function performUpkeep(bytes calldata performData) external override {
+    /// @dev performData is not used
+    function performUpkeep(
+        bytes calldata /* performData */
+    )
+        external
+        override
+    {
         executeDistribution();
     }
 }
