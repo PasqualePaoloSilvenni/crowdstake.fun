@@ -243,9 +243,15 @@ contract VotingModuleTest is Test {
         // Get initial distribution and verify it matches expected values
         uint256[] memory dist1 = votingModule.getCurrentVotingDistribution();
         uint256 totalPoints1 = 100; // 50 + 30 + 20
-        assertEq(dist1[0], (50 * votingPower * 1e18) / totalPoints1 / 1e18, "First project should have correct allocation");
-        assertEq(dist1[1], (30 * votingPower * 1e18) / totalPoints1 / 1e18, "Second project should have correct allocation");
-        assertEq(dist1[2], (20 * votingPower * 1e18) / totalPoints1 / 1e18, "Third project should have correct allocation");
+        assertEq(
+            dist1[0], (50 * votingPower * 1e18) / totalPoints1 / 1e18, "First project should have correct allocation"
+        );
+        assertEq(
+            dist1[1], (30 * votingPower * 1e18) / totalPoints1 / 1e18, "Second project should have correct allocation"
+        );
+        assertEq(
+            dist1[2], (20 * votingPower * 1e18) / totalPoints1 / 1e18, "Third project should have correct allocation"
+        );
 
         // Advance block to ensure timestamps differ
         vm.roll(block.number + 1);

@@ -15,7 +15,9 @@ contract ChainlinkAutomation is AutomationBase, AutomationCompatibleInterface {
     /// @dev checkData is not used but required by Chainlink interface
     /// @return upkeepNeeded Whether upkeep is needed
     /// @return performData The data to pass to performUpkeep
-    function checkUpkeep(bytes calldata /* checkData */)
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
         external
         view
         override
@@ -28,7 +30,12 @@ contract ChainlinkAutomation is AutomationBase, AutomationCompatibleInterface {
     /// @notice Chainlink-compatible upkeep execution
     /// @dev Called by Chainlink nodes when checkUpkeep returns true
     /// @dev performData is not used
-    function performUpkeep(bytes calldata /* performData */) external override {
+    function performUpkeep(
+        bytes calldata /* performData */
+    )
+        external
+        override
+    {
         executeDistribution();
     }
 }
