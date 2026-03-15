@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../../interfaces/IDistributionManager.sol";
+import {IDistributionManager} from "../../interfaces/IDistributionManager.sol";
 
 /// @title AutomationBase
 /// @notice Abstract base contract for automation providers
 /// @dev Inherit this contract to create provider-specific automation implementations
 abstract contract AutomationBase {
-    IDistributionManager public immutable distributionManager;
+    IDistributionManager public immutable DISTRIBUTION_MANAGER;
 
     event AutomationExecuted(address indexed executor, uint256 blockNumber);
 
@@ -15,14 +15,14 @@ abstract contract AutomationBase {
 
     constructor(address _distributionManager) {
         require(_distributionManager != address(0), "Invalid distribution manager");
-        distributionManager = IDistributionManager(_distributionManager);
+        DISTRIBUTION_MANAGER = IDistributionManager(_distributionManager);
     }
 
     /// @notice Checks if distribution is ready
     /// @dev Delegates to DistributionManager for condition checking
     /// @return ready Whether the distribution conditions are met
     function isDistributionReady() public view virtual returns (bool ready) {
-        return distributionManager.isDistributionReady();
+        return DISTRIBUTION_MANAGER.isDistributionReady();
     }
 
     /// @notice Gets the automation data for execution
@@ -39,9 +39,9 @@ abstract contract AutomationBase {
     /// @notice Executes the distribution
     /// @dev Delegates to DistributionManager for execution
     function executeDistribution() public virtual {
-        if (!distributionManager.isDistributionReady()) revert NotResolved();
+        if (!DISTRIBUTION_MANAGER.isDistributionReady()) revert NotResolved();
 
-        distributionManager.claimAndDistribute();
+        DISTRIBUTION_MANAGER.claimAndDistribute();
 
         emit AutomationExecuted(msg.sender, block.number);
     }

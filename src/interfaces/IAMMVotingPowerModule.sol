@@ -44,7 +44,7 @@ interface IAMMVotingPowerModule {
      * @param balance Value of deposited LP tokens (Butter)
      * @param scalingFactor At the time of deposit or updated with `syncVotingWeight` function
      */
-    struct LPData {
+    struct LpData {
         uint256 balance;
         uint256 scalingFactor;
     }
@@ -59,7 +59,7 @@ interface IAMMVotingPowerModule {
     function scalingFactors(address _lp) external view returns (uint256 _factor);
 
     /// @notice Returns the amount of LP tokens (Butter) deposited for an account
-    function accountToLPBalance(address _account, address _lp) external view returns (uint256 _balance);
+    function accountToLpBalance(address _account, address _lp) external view returns (uint256 _balance);
 
     /// @notice Deposits LP tokens (Butter) and mints `ButteredBread` according to the respective LP scaling factor
     function deposit(address _lp, uint256 _amount) external;

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {console} from "forge-std/Test.sol";
 import {TestWrapper} from "./TestWrapper.sol";
 import {RecipientRegistry} from "../src/modules/RecipientRegistry.sol";
 
@@ -261,6 +260,7 @@ contract RecipientRegistryTest is TestWrapper {
         // Add many recipients
         uint256 count = 100;
         for (uint256 i = 1; i <= count; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             registry.queueRecipientAddition(address(uint160(i)));
         }
 
@@ -269,6 +269,7 @@ contract RecipientRegistryTest is TestWrapper {
 
         // Remove half
         for (uint256 i = 1; i <= 50; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             registry.queueRecipientRemoval(address(uint160(i)));
         }
 

@@ -37,20 +37,15 @@ contract MockVotingModule is IVotingModule {
         votingPower[account] = power;
     }
 
-    /// @inheritdoc IVotingModule
-    function vote(uint256[] calldata points) external override {
-        // Mock implementation - just store the points
+    function vote(uint256[] calldata points) external {
         votingDistribution = points;
     }
 
-    /// @inheritdoc IVotingModule
-    function voteWithMultipliers(uint256[] calldata points, uint256[] calldata) external override {
-        // Mock implementation - ignore multipliers
+    function voteWithMultipliers(uint256[] calldata points, uint256[] calldata) external {
         votingDistribution = points;
     }
 
-    /// @inheritdoc IVotingModule
-    function delegate(address delegatee) external override {
+    function delegate(address delegatee) external {
         delegates[msg.sender] = delegatee;
     }
 
@@ -59,13 +54,11 @@ contract MockVotingModule is IVotingModule {
         return votingPower[account];
     }
 
-    /// @inheritdoc IVotingModule
-    function castVote(uint256[] calldata points) external override {
+    function castVote(uint256[] calldata points) external {
         votingDistribution = points;
     }
 
-    /// @inheritdoc IVotingModule
-    function castVoteWithMultipliers(uint256[] calldata points, uint256[] calldata) external override {
+    function castVoteWithMultipliers(uint256[] calldata points, uint256[] calldata) external {
         votingDistribution = points;
     }
 
@@ -80,28 +73,24 @@ contract MockVotingModule is IVotingModule {
         return votingDistribution;
     }
 
-    /// @inheritdoc IVotingModule
-    function setMaxPoints(uint256 _maxPoints) external override {
+    function setMaxPoints(uint256 _maxPoints) external {
         maxPoints = _maxPoints;
     }
 
-    /// @inheritdoc IVotingModule
     function castVoteWithSignature(address voter, uint256[] calldata points, uint256 nonce, bytes calldata)
         external
-        override
     {
         require(!usedNonces[voter][nonce], "Nonce already used");
         usedNonces[voter][nonce] = true;
         votingDistribution = points;
     }
 
-    /// @inheritdoc IVotingModule
     function castBatchVotesWithSignature(
         address[] calldata voters,
         uint256[][] calldata points,
         uint256[] calldata nonces,
         bytes[] calldata
-    ) external override {
+    ) external {
         require(voters.length == points.length, "Length mismatch");
         require(voters.length == nonces.length, "Length mismatch");
 
@@ -114,8 +103,7 @@ contract MockVotingModule is IVotingModule {
         }
     }
 
-    /// @inheritdoc IVotingModule
-    function validateVotePoints(uint256[] calldata points) external view override returns (bool) {
+    function validateVotePoints(uint256[] calldata points) external view returns (bool) {
         uint256 total = 0;
         for (uint256 i = 0; i < points.length; i++) {
             total += points[i];
