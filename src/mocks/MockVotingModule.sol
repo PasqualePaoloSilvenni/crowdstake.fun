@@ -77,9 +77,7 @@ contract MockVotingModule is IVotingModule {
         maxPoints = _maxPoints;
     }
 
-    function castVoteWithSignature(address voter, uint256[] calldata points, uint256 nonce, bytes calldata)
-        external
-    {
+    function castVoteWithSignature(address voter, uint256[] calldata points, uint256 nonce, bytes calldata) external {
         require(!usedNonces[voter][nonce], "Nonce already used");
         usedNonces[voter][nonce] = true;
         votingDistribution = points;
