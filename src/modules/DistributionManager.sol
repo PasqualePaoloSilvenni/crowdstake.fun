@@ -5,7 +5,6 @@ import {IDistributionManager} from "../interfaces/IDistributionManager.sol";
 import {IYieldModule} from "../interfaces/IYieldModule.sol";
 import {IVotingModule} from "../interfaces/IVotingModule.sol";
 import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
-import {IDistributionStrategy} from "../interfaces/IDistributionStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -77,8 +76,8 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
         // Get accrued yield
         uint256 yieldAccrued = yieldModule.yieldAccrued();
 
-        // Distribution is ready if yield > recipient count (ensures each recipient gets at least 1 wei)
-        return yieldAccrued > recipientCount;
+        // Distribution is ready if yield >= recipient count (ensures each recipient gets at least 1 wei)
+        return yieldAccrued >= recipientCount;
     }
 
     /// @notice Claims yield from the base token and distributes
