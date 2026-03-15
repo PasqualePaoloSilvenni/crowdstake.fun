@@ -86,6 +86,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param _distributionModule Address of the distribution module
     /// @param _recipientRegistry Address of the recipient registry
     /// @param _cycleModule Address of the cycle module
+    // solhint-disable-next-line func-name-mixedcase
     function __AbstractVotingModule_init(
         IVotingPowerStrategy[] calldata _strategies,
         address _distributionModule,
@@ -274,7 +275,23 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         override
         returns (bool)
     {
-        bytes32 structHash = keccak256(abi.encode(VOTE_TYPEHASH, voter, keccak256(abi.encodePacked(points)), nonce));
+        bytes32 typeHash = VOTE_TYPEHASH;
+        bytes32 structHash;
+        assembly {
+            let ptr := mload(0x40)
+
+            // Copy points calldata to memory and hash it
+            let pointsSize := mul(points.length, 0x20)
+            calldatacopy(ptr, points.offset, pointsSize)
+            let pointsHash := keccak256(ptr, pointsSize)
+
+            // Encode and hash: (VOTE_TYPEHASH, voter, pointsHash, nonce) = 4 x 32 bytes
+            mstore(ptr, typeHash)
+            mstore(add(ptr, 0x20), voter)
+            mstore(add(ptr, 0x40), pointsHash)
+            mstore(add(ptr, 0x60), nonce)
+            structHash := keccak256(ptr, 0x80)
+        }
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = hash.recover(signature);
         return signer == voter;
