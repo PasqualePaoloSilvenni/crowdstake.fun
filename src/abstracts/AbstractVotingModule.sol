@@ -164,7 +164,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
 
     /// @notice Gets the maximum batch size for batch voting
     /// @dev Returns the constant MAX_BATCH_SIZE value
-    /// @return The maximum number of votes in a batch (50)
+    /// @return The maximum number of votes in a batch (200)
     function getMaxBatchSize() external pure returns (uint256) {
         return MAX_BATCH_SIZE;
     }
