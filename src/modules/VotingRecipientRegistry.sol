@@ -97,10 +97,7 @@ contract VotingRecipientRegistry is BaseRecipientRegistry {
     /// @param admin The address that will have administrative control (limited to emergency functions)
     /// @param initialRecipients Array of addresses that will be the initial voting recipients
     /// @param _proposalExpiry Time limit in seconds for how long proposals remain valid for voting
-    function initialize(address admin, address[] memory initialRecipients, uint256 _proposalExpiry)
-        public
-        initializer
-    {
+    function initialize(address admin, address[] memory initialRecipients, uint256 _proposalExpiry) public initializer {
         __Ownable_init(admin);
 
         if (initialRecipients.length == 0) revert NoRecipients();
