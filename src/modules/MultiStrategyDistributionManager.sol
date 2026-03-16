@@ -12,24 +12,24 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract MultiStrategyDistributionManager is DistributionManager {
     using SafeERC20 for IERC20;
 
-    /// @notice Ordered list of strategy addresses that receive yield
-    address[] public strategies;
+    /// @notice Ordered list of strategies that receive yield
+    IDistributionStrategy[] public strategies;
 
     /// @notice Emitted when the strategy set is configured during initialization
-    event StrategiesInitialized(address[] strategies);
+    event StrategiesInitialized(IDistributionStrategy[] strategies);
 
     /// @notice Initializes the MultiStrategyDistributionManager with multiple strategies
     /// @param _cycleManager Address of the cycle manager
     /// @param _recipientRegistry Address of the recipient registry
     /// @param _baseToken Address of the base token with yield
     /// @param _votingModule Address of the voting module
-    /// @param _strategies Array of distribution strategy addresses to distribute to
+    /// @param _strategies Array of distribution strategies to distribute to
     function initialize(
         address _cycleManager,
         address _recipientRegistry,
         address _baseToken,
         address _votingModule,
-        address[] calldata _strategies
+        IDistributionStrategy[] calldata _strategies
     ) external initializer {
         // Initialize parent DistributionManager
         __DistributionManager_init(_cycleManager, _recipientRegistry, _baseToken, _votingModule);
@@ -62,21 +62,21 @@ contract MultiStrategyDistributionManager is DistributionManager {
 
         // Distribute to each strategy
         for (uint256 i = 0; i < strategies.length; i++) {
-            address strategy = strategies[i];
+            IDistributionStrategy strategy = strategies[i];
 
             // Transfer tokens to strategy
-            baseToken.safeTransfer(strategy, amountPerStrategy);
+            baseToken.safeTransfer(address(strategy), amountPerStrategy);
 
             // Trigger distribution in strategy
-            IDistributionStrategy(strategy).distribute(amountPerStrategy);
+            strategy.distribute(amountPerStrategy);
 
-            emit YieldDistributed(strategy, amountPerStrategy);
+            emit YieldDistributed(address(strategy), amountPerStrategy);
         }
     }
 
     /// @notice Gets all configured strategies
-    /// @return Array of strategy addresses
-    function getStrategies() external view returns (address[] memory) {
+    /// @return Array of distribution strategies
+    function getStrategies() external view returns (IDistributionStrategy[] memory) {
         return strategies;
     }
 
