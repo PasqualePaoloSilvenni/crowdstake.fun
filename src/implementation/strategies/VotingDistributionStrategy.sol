@@ -17,8 +17,6 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
 
     /// @notice Thrown when the voting distribution array length doesn't match the recipient count
     error InvalidVotesLength();
-    /// @notice Thrown when a recipient's calculated share exceeds the total amount
-    error RecipientShareExceedsAmount();
     /// @notice Thrown when attempting to distribute while no votes have been cast
     error NoVotes();
 
@@ -58,7 +56,6 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
 
         for (uint256 i = 0; i < recipients.length; i++) {
             uint256 recipientShare = (amount * currentVotes[i]) / totalVotes;
-            if (recipientShare > amount) revert RecipientShareExceedsAmount();
             if (recipientShare > 0) {
                 yieldToken.safeTransfer(recipients[i], recipientShare);
                 emit Distributed(recipients[i], recipientShare);
