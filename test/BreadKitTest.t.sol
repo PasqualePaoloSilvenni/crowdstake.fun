@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {TestWrapper} from "./TestWrapper.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {BreadKitFactory} from "../src/BreadKitFactory.sol";
+import {CrowdStakeFactory} from "../src/CrowdStakeFactory.sol";
 import {SexyDaiYield} from "../src/token-types/SexyDaiYield.sol";
 import {IBreadKitToken} from "../src/interfaces/IBreadKitToken.sol";
 import {IWXDAI} from "../src/interfaces/IWXDAI.sol";
@@ -12,13 +12,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract BreadKitTest is TestWrapper {
     address constant WX_DAI = 0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d;
     address constant SX_DAI = 0xaf204776c7245bF4147c2612BF6e5972Ee483701;
-    BreadKitFactory public factory;
+    CrowdStakeFactory public factory;
     IBreadKitToken public token;
     address public constant RANDOM_HOLDER = 0x23b4f73FB31e89B27De17f9c5DE2660cc1FB0CdF; // random multisig
     address public constant RANDOM_EOA = 0x000000000000000000000000000000000000dEaD;
 
     function setUp() public {
-        factory = new BreadKitFactory(address(this));
+        factory = new CrowdStakeFactory(address(this));
 
         /// @dev this is how we deploy and whitelist a new token type
         address impl = address(new SexyDaiYield(WX_DAI, SX_DAI));

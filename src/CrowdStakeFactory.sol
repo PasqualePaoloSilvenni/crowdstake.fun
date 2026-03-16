@@ -6,7 +6,7 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {DefaultYieldClaimer} from "./modules/DefaultYieldClaimer.sol";
 
-contract BreadKitFactory is Ownable {
+contract CrowdStakeFactory is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     error AlreadyWhitelistedBeacon();
