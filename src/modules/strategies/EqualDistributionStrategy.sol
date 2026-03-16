@@ -23,11 +23,10 @@ contract EqualDistributionStrategy is BaseDistributionStrategy {
     /// @param recipients Array of recipients to distribute to
     function _distribute(uint256 amount, address[] memory recipients) internal override {
         uint256 amountPerRecipient = amount / recipients.length;
+        if (amountPerRecipient == 0) return;
 
         for (uint256 i = 0; i < recipients.length; i++) {
-            if (amountPerRecipient > 0) {
-                yieldToken.safeTransfer(recipients[i], amountPerRecipient);
-            }
+            yieldToken.safeTransfer(recipients[i], amountPerRecipient);
         }
     }
 }
