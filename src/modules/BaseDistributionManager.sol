@@ -12,8 +12,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract BaseDistributionManager is DistributionManager {
     using SafeERC20 for IERC20;
 
+    /// @notice The single strategy that receives all claimed yield
     IDistributionStrategy public distributionStrategy;
 
+    /// @notice Emitted when the distribution strategy is set or changed
     event StrategySet(address indexed strategy);
 
     /// @notice Initializes the BaseDistributionManager with a single distribution strategy
