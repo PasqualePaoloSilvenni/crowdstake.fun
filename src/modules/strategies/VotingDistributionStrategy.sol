@@ -12,8 +12,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract VotingDistributionStrategy is BaseDistributionStrategy {
     using SafeERC20 for IERC20;
 
+    /// @notice Module that provides the current vote distribution weights
     IVotingModule public votingModule;
 
+    /// @notice Thrown when the voting distribution array length doesn't match the recipient count
     error InvalidVotesLength();
 
     /// @dev Initializes the voting distribution strategy

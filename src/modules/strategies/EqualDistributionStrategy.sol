@@ -18,26 +18,15 @@ contract EqualDistributionStrategy is BaseDistributionStrategy {
         __BaseDistributionStrategy_init(_yieldToken, _recipientRegistry);
     }
 
-    /// @dev Distributes amount equally among all recipients
+    /// @dev Distributes amount equally among all recipients (dust is left in contract)
     /// @param amount Total amount to distribute
     /// @param recipients Array of recipients to distribute to
     function _distribute(uint256 amount, address[] memory recipients) internal override {
         uint256 amountPerRecipient = amount / recipients.length;
-        uint256 distributed = 0;
 
         for (uint256 i = 0; i < recipients.length; i++) {
-            uint256 share;
-
-            // Last recipient gets remainder to handle rounding
-            if (i == recipients.length - 1) {
-                share = amount - distributed;
-            } else {
-                share = amountPerRecipient;
-            }
-
-            if (share > 0) {
-                yieldToken.safeTransfer(recipients[i], share);
-                distributed += share;
+            if (amountPerRecipient > 0) {
+                yieldToken.safeTransfer(recipients[i], amountPerRecipient);
             }
         }
     }
