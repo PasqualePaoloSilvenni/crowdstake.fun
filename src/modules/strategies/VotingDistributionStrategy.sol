@@ -40,25 +40,12 @@ contract VotingDistributionStrategy is BaseDistributionStrategy {
             totalVotes += currentVotes[i];
         }
 
-        if (totalVotes == 0) return; // No votes, no distribution
-
-        uint256 distributed = 0;
+        if (totalVotes == 0) return;
 
         for (uint256 i = 0; i < recipients.length; i++) {
-            if (currentVotes[i] > 0) {
-                uint256 recipientShare;
-
-                // Last recipient with votes gets remainder to handle rounding
-                if (i == recipients.length - 1) {
-                    recipientShare = amount - distributed;
-                } else {
-                    recipientShare = (amount * currentVotes[i]) / totalVotes;
-                }
-
-                if (recipientShare > 0) {
-                    yieldToken.safeTransfer(recipients[i], recipientShare);
-                    distributed += recipientShare;
-                }
+            uint256 recipientShare = (amount * currentVotes[i]) / totalVotes;
+            if (recipientShare > 0) {
+                yieldToken.safeTransfer(recipients[i], recipientShare);
             }
         }
     }
