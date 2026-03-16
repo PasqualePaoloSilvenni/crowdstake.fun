@@ -59,10 +59,9 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
             if (recipientShare > amount) revert RecipientShareExceedsAmount();
             if (recipientShare > 0) {
                 yieldToken.safeTransfer(recipients[i], recipientShare);
+                emit Distributed(recipients[i], recipientShare);
             }
         }
-
-        emit Distributed(msg.sender, amount);
     }
 
     /// @notice Updates the voting module
