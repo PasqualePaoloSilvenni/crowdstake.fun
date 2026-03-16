@@ -5,6 +5,7 @@ import {DistributionManager} from "./DistributionManager.sol";
 import {IDistributionStrategy} from "../interfaces/IDistributionStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ICycleModule} from "../interfaces/ICycleModule.sol";
 
 /// @title BaseDistributionManager
 /// @notice Concrete implementation of DistributionManager that distributes to a single strategy
@@ -47,9 +48,11 @@ contract BaseDistributionManager is DistributionManager {
         emit StrategySet(_strategy);
     }
 
-    /// @notice Checks if distribution is ready based on votes and yield
-    /// @return ready True if there are votes, recipients, and sufficient yield
+    /// @notice Checks if distribution is ready based on cycle completion, votes, and yield
+    /// @return ready True if cycle is complete, there are votes, recipients, and sufficient yield
     function isDistributionReady() public view override returns (bool ready) {
+        if (!ICycleModule(cycleManager).isCycleComplete()) return false;
+
         uint256 totalVotes = getTotalCurrentVotingPower();
         if (totalVotes == 0) return false;
 
