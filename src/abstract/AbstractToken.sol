@@ -9,7 +9,7 @@ import {
     ERC20Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-abstract contract BaseToken is ERC20VotesUpgradeable, Ownable, IBreadKitToken {
+abstract contract AbstractToken is ERC20VotesUpgradeable, Ownable, IBreadKitToken {
     error MintZero();
     error BurnZero();
     error ClaimZero();
