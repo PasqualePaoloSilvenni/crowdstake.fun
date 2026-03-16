@@ -78,19 +78,20 @@ abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgrad
     /// @dev Processes all queued additions and removals, then clears the queues
     /// @dev Emits RecipientAdded/RecipientRemoved for each change and QueueProcessed at the end
     function _processQueue() internal {
-        uint256 addedCount = queuedRecipientsForAddition.length;
-        uint256 removedCount = 0;
+        // Snapshot queues before clearing
+        address[] memory addedList = queuedRecipientsForAddition;
+        address[] memory removedList = queuedRecipientsForRemoval;
 
         // Add all queued recipients
-        for (uint256 i = 0; i < queuedRecipientsForAddition.length; i++) {
-            address recipient = queuedRecipientsForAddition[i];
+        for (uint256 i = 0; i < addedList.length; i++) {
+            address recipient = addedList[i];
             recipients.push(recipient);
             isRecipientMapping[recipient] = true;
             emit RecipientAdded(recipient);
         }
 
         // Process removals by rebuilding the recipients array
-        if (queuedRecipientsForRemoval.length > 0) {
+        if (removedList.length > 0) {
             address[] memory oldRecipients = recipients;
             delete recipients;
 
@@ -99,11 +100,10 @@ abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgrad
                 bool shouldRemove = false;
 
                 // Check if this recipient should be removed
-                for (uint256 j = 0; j < queuedRecipientsForRemoval.length; j++) {
-                    if (recipient == queuedRecipientsForRemoval[j]) {
+                for (uint256 j = 0; j < removedList.length; j++) {
+                    if (recipient == removedList[j]) {
                         shouldRemove = true;
                         isRecipientMapping[recipient] = false;
-                        removedCount++;
                         emit RecipientRemoved(recipient);
                         break;
                     }
@@ -120,7 +120,7 @@ abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgrad
         delete queuedRecipientsForAddition;
         delete queuedRecipientsForRemoval;
 
-        emit QueueProcessed(addedCount, removedCount);
+        emit QueueProcessed(addedList, removedList, recipients);
     }
 
     /// @notice Clear the addition queue without processing
