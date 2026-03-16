@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {AbstractAutomation} from "../abstract/AbstractAutomation.sol";
+import {AbstractAutomation} from "../../abstract/AbstractAutomation.sol";
 import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
 /// @title ChainlinkAutomation
