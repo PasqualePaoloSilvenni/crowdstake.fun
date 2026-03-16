@@ -14,8 +14,11 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
+    /// @notice Thrown when a zero address is supplied where a valid address is required
     error ZeroAddress();
+    /// @notice Thrown when a distribution is attempted with a zero amount
     error ZeroAmount();
+    /// @notice Thrown when the recipient registry returns an empty list
     error NoRecipients();
 
     /// @notice ERC-20 token being distributed as yield
