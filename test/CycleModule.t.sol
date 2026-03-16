@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {CycleModule} from "../src/modules/CycleModule.sol";
+import {CycleModule} from "../src/implementation/CycleModule.sol";
 import {AbstractCycleModule} from "../src/abstract/AbstractCycleModule.sol";
 
 contract CycleModuleTest is Test {

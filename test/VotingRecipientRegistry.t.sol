@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {TestWrapper} from "./TestWrapper.sol";
-import {VotingRecipientRegistry} from "../src/modules/registries/VotingRecipientRegistry.sol";
+import {VotingRecipientRegistry} from "../src/implementation/registries/VotingRecipientRegistry.sol";
 import {IRecipientRegistry} from "../src/interfaces/IRecipientRegistry.sol";
 
 contract VotingRecipientRegistryTest is TestWrapper {

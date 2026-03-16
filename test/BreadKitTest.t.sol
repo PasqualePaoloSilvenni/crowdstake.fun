@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {TestWrapper} from "./TestWrapper.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {CrowdStakeFactory} from "../src/CrowdStakeFactory.sol";
-import {SexyDaiYield} from "../src/token-types/SexyDaiYield.sol";
+import {SexyDaiYield} from "../src/implementation/token/SexyDaiYield.sol";
 import {IBreadKitToken} from "../src/interfaces/IBreadKitToken.sol";
 import {IWXDAI} from "../src/interfaces/IWXDAI.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

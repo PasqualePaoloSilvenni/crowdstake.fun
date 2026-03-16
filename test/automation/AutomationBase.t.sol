@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {ChainlinkAutomation} from "../../src/modules/automation/ChainlinkAutomation.sol";
-import {AutomationBase} from "../../src/base/AutomationBase.sol";
-// import "../../src/modules/automation/GelatoAutomation.sol";
+import {ChainlinkAutomation} from "../../src/base/ChainlinkAutomation.sol";
+import {AbstractAutomation} from "../../src/abstract/AbstractAutomation.sol";
+// import "../../src/implementation/automation/GelatoAutomation.sol";
 import {MockDistributionManager} from "../mocks/MockDistributionManager.sol";
 import {IDistributionModule} from "../../src/interfaces/IDistributionModule.sol";
 
@@ -188,7 +188,7 @@ contract AutomationBaseTest is Test {
 
     function testExecutionRevertsWhenNotResolved() public {
         // Try to execute when conditions not met
-        vm.expectRevert(AutomationBase.NotResolved.selector);
+        vm.expectRevert(AbstractAutomation.NotResolved.selector);
         chainlinkAutomation.executeDistribution();
     }
 

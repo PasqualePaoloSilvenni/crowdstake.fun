@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BasisPointsVotingModule} from "../src/base/BasisPointsVotingModule.sol";
 import {IVotingModule} from "../src/interfaces/IVotingModule.sol";
-import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingPower.sol";
+import {TokenBasedVotingPower} from "../src/implementation/strategies/TokenBasedVotingPower.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -12,7 +12,7 @@ import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Vo
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
-import {CycleModule} from "../src/modules/CycleModule.sol";
+import {CycleModule} from "../src/implementation/CycleModule.sol";
 
 // Mock token implementation for testing
 contract MockToken is ERC20, ERC20Votes, ERC20Permit {

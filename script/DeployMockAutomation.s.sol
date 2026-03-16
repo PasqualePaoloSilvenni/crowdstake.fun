@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Script, console} from "forge-std/Script.sol";
 import {MockDistributionManagerSimple} from "../test/mocks/MockDistributionManagerSimple.sol";
-import {ChainlinkAutomation} from "../src/modules/automation/ChainlinkAutomation.sol";
+import {ChainlinkAutomation} from "../src/base/ChainlinkAutomation.sol";
 
 /// @title DeployMockAutomation
 /// @notice Deploy script for mock distribution manager with Chainlink automation

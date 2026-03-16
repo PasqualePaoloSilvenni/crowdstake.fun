@@ -4,11 +4,11 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {BasisPointsVotingModule} from "../src/base/BasisPointsVotingModule.sol";
 import {IVotingModule} from "../src/interfaces/IVotingModule.sol";
-import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingPower.sol";
+import {TokenBasedVotingPower} from "../src/implementation/strategies/TokenBasedVotingPower.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
-import {CycleModule} from "../src/modules/CycleModule.sol";
+import {CycleModule} from "../src/implementation/CycleModule.sol";
 
 // Simple mock token for testing (non-upgradeable)
 contract MockToken is IVotes {
