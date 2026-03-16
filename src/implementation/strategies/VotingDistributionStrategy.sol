@@ -17,6 +17,8 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
 
     /// @notice Thrown when the voting distribution array length doesn't match the recipient count
     error InvalidVotesLength();
+    /// @notice Thrown when a recipient's calculated share exceeds the total amount
+    error RecipientShareExceedsAmount();
 
     /// @dev Initializes the voting distribution strategy
     /// @param _yieldToken Address of the yield token to distribute
@@ -29,9 +31,13 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
     }
 
     /// @dev Distributes amount based on voting weights
-    /// @param amount Total amount to distribute
-    /// @param recipients Array of recipients to distribute to
-    function _distribute(uint256 amount, address[] memory recipients) internal override {
+    function distribute(uint256 amount) external override {
+        if (amount == 0) revert ZeroAmount();
+
+        address[] memory recipients = recipientRegistry.getRecipients();
+        if (recipients.length == 0) revert NoRecipients();
+        if (amount < recipients.length) revert InsufficientYieldForRecipients();
+
         uint256[] memory currentVotes = votingModule.getCurrentVotingDistribution();
         if (currentVotes.length != recipients.length) revert InvalidVotesLength();
 
@@ -44,10 +50,13 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
 
         for (uint256 i = 0; i < recipients.length; i++) {
             uint256 recipientShare = (amount * currentVotes[i]) / totalVotes;
+            if (recipientShare > amount) revert RecipientShareExceedsAmount();
             if (recipientShare > 0) {
                 yieldToken.safeTransfer(recipients[i], recipientShare);
             }
         }
+
+        emit Distributed(amount);
     }
 
     /// @notice Updates the voting module

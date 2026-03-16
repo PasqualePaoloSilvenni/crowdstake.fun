@@ -10,7 +10,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 /// @title AbstractDistributionStrategy
 /// @notice Abstract base for distribution strategies that split yield among registry recipients
-/// @dev Concrete strategies implement `_distribute` to define how yield is allocated
+/// @dev Concrete strategies implement `distribute` to define how yield is allocated
 abstract contract AbstractDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -20,6 +20,8 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
     error ZeroAmount();
     /// @notice Thrown when the recipient registry returns an empty list
     error NoRecipients();
+    /// @notice Thrown when the yield amount is too small to distribute at least 1 wei per recipient
+    error InsufficientYieldForRecipients();
 
     /// @notice ERC-20 token being distributed as yield
     IERC20 public yieldToken;
@@ -45,28 +47,5 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
         if (_recipientRegistry == address(0)) revert ZeroAddress();
         yieldToken = IERC20(_yieldToken);
         recipientRegistry = IRecipientRegistry(_recipientRegistry);
-    }
-
-    /// @inheritdoc IDistributionStrategy
-    function distribute(uint256 amount) public virtual override {
-        if (amount == 0) revert ZeroAmount();
-
-        address[] memory recipients = _getRecipients();
-        if (recipients.length == 0) revert NoRecipients();
-
-        _distribute(amount, recipients);
-
-        emit Distributed(amount);
-    }
-
-    /// @dev Internal distribution logic to be implemented by concrete strategies
-    /// @param amount Amount to distribute
-    /// @param recipients Array of recipients to distribute to
-    function _distribute(uint256 amount, address[] memory recipients) internal virtual;
-
-    /// @dev Gets recipients from the registry
-    /// @return Array of recipient addresses
-    function _getRecipients() internal view returns (address[] memory) {
-        return recipientRegistry.getRecipients();
     }
 }

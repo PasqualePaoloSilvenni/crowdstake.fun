@@ -19,14 +19,19 @@ contract EqualDistributionStrategy is AbstractDistributionStrategy {
     }
 
     /// @dev Distributes amount equally among all recipients (dust is left in contract)
-    /// @param amount Total amount to distribute
-    /// @param recipients Array of recipients to distribute to
-    function _distribute(uint256 amount, address[] memory recipients) internal override {
+    function distribute(uint256 amount) external override {
+        if (amount == 0) revert ZeroAmount();
+
+        address[] memory recipients = recipientRegistry.getRecipients();
+        if (recipients.length == 0) revert NoRecipients();
+        if (amount < recipients.length) revert InsufficientYieldForRecipients();
+
         uint256 amountPerRecipient = amount / recipients.length;
-        if (amountPerRecipient == 0) return;
 
         for (uint256 i = 0; i < recipients.length; i++) {
             yieldToken.safeTransfer(recipients[i], amountPerRecipient);
         }
+
+        emit Distributed(amount);
     }
 }
