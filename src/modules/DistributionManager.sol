@@ -62,28 +62,9 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
         yieldModule = IYieldModule(_baseToken);
     }
 
-    /// @notice Checks if distribution is ready based on votes and yield
-    /// @dev Returns true if there are votes > 0 and yield accrued > recipient count
-    /// @return ready True if distribution conditions are met
-    function isDistributionReady() public view override returns (bool ready) {
-        // Get total voting power to check if there are any votes
-        uint256 totalVotes = getTotalCurrentVotingPower();
-        if (totalVotes == 0) {
-            return false;
-        }
-
-        // Get recipient count
-        uint256 recipientCount = recipientRegistry.getRecipientCount();
-        if (recipientCount == 0) {
-            return false;
-        }
-
-        // Get accrued yield
-        uint256 yieldAccrued = yieldModule.yieldAccrued();
-
-        // Distribution is ready if yield >= recipient count (ensures each recipient gets at least 1 wei)
-        return yieldAccrued >= recipientCount;
-    }
+    /// @notice Checks if distribution is ready
+    /// @dev Must be implemented by child contracts with their own readiness criteria
+    function isDistributionReady() public view virtual override returns (bool ready);
 
     /// @notice Claims yield from the base token and distributes
     /// @dev Must be implemented by child contracts

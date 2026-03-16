@@ -40,12 +40,20 @@ contract MultiStrategyDistributionManager is DistributionManager {
         emit StrategiesInitialized(_strategies);
     }
 
-    /// @notice Claims yield and distributes equally to all strategies
-    /// @dev Can be called by owner or cycle manager
-    function claimAndDistribute() external override {
-        // Allow both owner and cycle manager to call this
-        require(msg.sender == owner() || msg.sender == cycleManager, "Unauthorized");
+    /// @notice Checks if distribution is ready based on votes and yield
+    /// @return ready True if there are votes, recipients, and sufficient yield
+    function isDistributionReady() public view override returns (bool ready) {
+        uint256 totalVotes = getTotalCurrentVotingPower();
+        if (totalVotes == 0) return false;
 
+        uint256 recipientCount = recipientRegistry.getRecipientCount();
+        if (recipientCount == 0) return false;
+
+        return yieldModule.yieldAccrued() >= recipientCount;
+    }
+
+    /// @notice Claims yield and distributes equally to all strategies
+    function claimAndDistribute() external override {
         if (!isDistributionReady()) revert DistributionNotReady();
         require(strategies.length > 0, "No strategies configured");
 

@@ -47,6 +47,18 @@ contract BaseDistributionManager is DistributionManager {
         emit StrategySet(_strategy);
     }
 
+    /// @notice Checks if distribution is ready based on votes and yield
+    /// @return ready True if there are votes, recipients, and sufficient yield
+    function isDistributionReady() public view override returns (bool ready) {
+        uint256 totalVotes = getTotalCurrentVotingPower();
+        if (totalVotes == 0) return false;
+
+        uint256 recipientCount = recipientRegistry.getRecipientCount();
+        if (recipientCount == 0) return false;
+
+        return yieldModule.yieldAccrued() >= recipientCount;
+    }
+
     /// @notice Claims yield and distributes to the configured strategy
     /// @dev Can be called by owner or cycle manager
     function claimAndDistribute() external override {
