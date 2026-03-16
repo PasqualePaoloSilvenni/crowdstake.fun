@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {IDistributionStrategy} from "../../interfaces/IDistributionStrategy.sol";
-import {IDistributionStrategyModule} from "../../interfaces/IDistributionStrategyModule.sol";
 import {IRecipientRegistry} from "../../interfaces/IRecipientRegistry.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -13,11 +12,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 /// @notice Abstract base contract for distribution strategies that also acts as a module
 /// @dev Provides common functionality for yield distribution strategies using recipient registry
 ///      Merges functionality from DistributionStrategyModule for single strategy deployment
-abstract contract BaseDistributionStrategy is
-    Initializable,
-    IDistributionStrategy,
-    IDistributionStrategyModule,
-    OwnableUpgradeable
+abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable
 {
     using SafeERC20 for IERC20;
 
@@ -76,43 +71,6 @@ abstract contract BaseDistributionStrategy is
     /// @return Array of recipient addresses
     function _getRecipients() internal view returns (address[] memory) {
         return recipientRegistry.getRecipients();
-    }
-
-    // IDistributionStrategyModule implementation for single strategy mode
-
-    /// @inheritdoc IDistributionStrategyModule
-    function distributeToStrategy(address strategy, uint256 amount) external override onlyDistributionManager {
-        // For single strategy deployment, this contract is the strategy
-        require(strategy == address(this), "Invalid strategy");
-        if (amount == 0) revert ZeroAmount();
-
-        // Pull tokens from sender and distribute
-        yieldToken.safeTransferFrom(msg.sender, address(this), amount);
-        distribute(amount);
-
-        emit YieldDistributed(strategy, amount);
-    }
-
-    /// @inheritdoc IDistributionStrategyModule
-    function addStrategy(address) external pure override {
-        revert("Strategy management in DistributionManager");
-    }
-
-    /// @inheritdoc IDistributionStrategyModule
-    function removeStrategy(address) external pure override {
-        revert("Strategy management in DistributionManager");
-    }
-
-    /// @inheritdoc IDistributionStrategyModule
-    function isStrategy(address strategy) external view override returns (bool) {
-        return strategy == address(this);
-    }
-
-    /// @inheritdoc IDistributionStrategyModule
-    function getStrategies() external view override returns (address[] memory) {
-        address[] memory strategies = new address[](1);
-        strategies[0] = address(this);
-        return strategies;
     }
 
     /// @notice Modifier to restrict access to distribution manager
