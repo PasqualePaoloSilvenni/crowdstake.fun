@@ -12,8 +12,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 /// @notice Abstract base contract for distribution strategies that also acts as a module
 /// @dev Provides common functionality for yield distribution strategies using recipient registry
 ///      Merges functionality from DistributionStrategyModule for single strategy deployment
-abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable
-{
+abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     error ZeroAddress();
