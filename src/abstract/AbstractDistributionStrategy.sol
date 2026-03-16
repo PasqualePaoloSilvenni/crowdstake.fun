@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IDistributionStrategy} from "../../interfaces/IDistributionStrategy.sol";
-import {IRecipientRegistry} from "../../interfaces/IRecipientRegistry.sol";
+import {IDistributionStrategy} from "../interfaces/IDistributionStrategy.sol";
+import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @title BaseDistributionStrategy
+/// @title AbstractDistributionStrategy
 /// @notice Abstract base for distribution strategies that split yield among registry recipients
 /// @dev Concrete strategies implement `_distribute` to define how yield is allocated
-abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
+abstract contract AbstractDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Thrown when a zero address is supplied where a valid address is required
@@ -29,15 +29,15 @@ abstract contract BaseDistributionStrategy is Initializable, IDistributionStrate
     /// @dev Initializes the base distribution strategy
     /// @param _yieldToken Address of the yield token to distribute
     /// @param _recipientRegistry Address of the recipient registry
-    function __BaseDistributionStrategy_init(address _yieldToken, address _recipientRegistry)
+    function __AbstractDistributionStrategy_init(address _yieldToken, address _recipientRegistry)
         internal
         onlyInitializing
     {
         __Ownable_init(msg.sender);
-        __BaseDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry);
+        __AbstractDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry);
     }
 
-    function __BaseDistributionStrategy_init_unchained(address _yieldToken, address _recipientRegistry)
+    function __AbstractDistributionStrategy_init_unchained(address _yieldToken, address _recipientRegistry)
         internal
         onlyInitializing
     {

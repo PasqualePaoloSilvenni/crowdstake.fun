@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IDistributionManager} from "../../interfaces/IDistributionManager.sol";
+import {IDistributionManager} from "../interfaces/IDistributionManager.sol";
 
-/// @title AutomationBase
+/// @title AbstractAutomation
 /// @notice Abstract base contract for automation providers
 /// @dev Inherit this contract to create provider-specific automation implementations
-abstract contract AutomationBase {
+abstract contract AbstractAutomation {
     IDistributionManager public immutable DISTRIBUTION_MANAGER;
 
     event AutomationExecuted(address indexed executor, uint256 blockNumber);

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {DistributionManager} from "./DistributionManager.sol";
+import {AbstractDistributionManager} from "../abstract/AbstractDistributionManager.sol";
 import {IDistributionStrategy} from "../interfaces/IDistributionStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title MultiStrategyDistributionManager
-/// @notice Concrete implementation of DistributionManager that distributes to multiple strategies equally
+/// @notice Concrete implementation of AbstractDistributionManager that distributes to multiple strategies equally
 /// @dev Distributes yield equally across all configured strategies
-contract MultiStrategyDistributionManager is DistributionManager {
+contract MultiStrategyDistributionManager is AbstractDistributionManager {
     using SafeERC20 for IERC20;
 
     /// @notice Ordered list of strategies that receive yield
@@ -31,8 +31,8 @@ contract MultiStrategyDistributionManager is DistributionManager {
         address _votingModule,
         IDistributionStrategy[] calldata _strategies
     ) external initializer {
-        // Initialize parent DistributionManager
-        __DistributionManager_init(_cycleManager, _recipientRegistry, _baseToken, _votingModule);
+        // Initialize parent AbstractDistributionManager
+        __AbstractDistributionManager_init(_cycleManager, _recipientRegistry, _baseToken, _votingModule);
 
         // Store strategies
         require(_strategies.length > 0, "No strategies provided");

@@ -11,10 +11,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/// @title DistributionManager
+/// @title AbstractDistributionManager
 /// @notice Abstract contract that manages yield claiming and distribution to strategies
 /// @dev Claims yield from base token and distributes to the base strategy when conditions are met
-abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDistributionManager {
+abstract contract AbstractDistributionManager is Initializable, OwnableUpgradeable, IDistributionManager {
     using SafeERC20 for IERC20;
 
     /// @notice Module that exposes yield accrual on the base token
@@ -33,17 +33,17 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
     /// @param _recipientRegistry Address of the recipient registry
     /// @param _baseToken Address of the base token with yield
     /// @param _votingModule Address of the voting module
-    function __DistributionManager_init(
+    function __AbstractDistributionManager_init(
         address _cycleManager,
         address _recipientRegistry,
         address _baseToken,
         address _votingModule
     ) internal onlyInitializing {
         __Ownable_init(msg.sender);
-        __DistributionManager_init_unchained(_cycleManager, _recipientRegistry, _baseToken, _votingModule);
+        __AbstractDistributionManager_init_unchained(_cycleManager, _recipientRegistry, _baseToken, _votingModule);
     }
 
-    function __DistributionManager_init_unchained(
+    function __AbstractDistributionManager_init_unchained(
         address _cycleManager,
         address _recipientRegistry,
         address _baseToken,

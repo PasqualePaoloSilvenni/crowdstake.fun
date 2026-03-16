@@ -4,10 +4,10 @@ pragma solidity ^0.8.20;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
 
-/// @title BaseRecipientRegistry
+/// @title AbstractRecipientRegistry
 /// @notice Abstract base contract for managing yield recipients with queued changes
 /// @dev Provides common queue management functionality for recipient registries
-abstract contract BaseRecipientRegistry is IRecipientRegistry, OwnableUpgradeable {
+abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgradeable {
     /// @notice Array of active recipient addresses
     /// @dev This array contains all currently active recipients who can receive yield
     address[] public recipients;

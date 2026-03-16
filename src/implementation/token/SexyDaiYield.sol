@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IWXDAI} from "../interfaces/IWXDAI.sol";
-import {ISXDAI} from "../interfaces/ISXDAI.sol";
-import {BaseToken} from "../BaseToken.sol";
+import {IWXDAI} from "../../interfaces/IWXDAI.sol";
+import {ISXDAI} from "../../interfaces/ISXDAI.sol";
+import {AbstractToken} from "../../abstract/AbstractToken.sol";
 
-contract SexyDaiYield is BaseToken {
+contract SexyDaiYield is AbstractToken {
     using SafeERC20 for IERC20;
 
     error IsCollateral();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IBreadKitToken} from "./interfaces/IBreadKitToken.sol";
+import {IToken} from "../interfaces/IToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@solady/contracts/auth/Ownable.sol";
 import {
@@ -9,7 +9,7 @@ import {
     ERC20Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-abstract contract BaseToken is ERC20VotesUpgradeable, Ownable, IBreadKitToken {
+abstract contract AbstractToken is ERC20VotesUpgradeable, Ownable, IToken {
     error MintZero();
     error BurnZero();
     error ClaimZero();
