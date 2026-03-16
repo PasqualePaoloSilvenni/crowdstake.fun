@@ -12,8 +12,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract MultiStrategyDistributionManager is DistributionManager {
     using SafeERC20 for IERC20;
 
+    /// @notice Ordered list of strategy addresses that receive yield
     address[] public strategies;
 
+    /// @notice Emitted when the strategy set is configured during initialization
     event StrategiesInitialized(address[] strategies);
 
     /// @notice Initializes the MultiStrategyDistributionManager with multiple strategies
