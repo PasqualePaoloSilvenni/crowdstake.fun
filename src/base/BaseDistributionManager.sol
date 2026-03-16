@@ -64,11 +64,7 @@ contract BaseDistributionManager is AbstractDistributionManager {
     }
 
     /// @notice Claims yield and distributes to the configured strategy
-    /// @dev Can be called by owner or cycle manager
     function claimAndDistribute() external override {
-        // Allow both owner and cycle manager to call this
-        require(msg.sender == owner() || msg.sender == address(cycleManager), "Unauthorized");
-
         if (!isDistributionReady()) revert DistributionNotReady();
         if (address(distributionStrategy) == address(0)) revert("No strategy set");
 

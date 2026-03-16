@@ -40,8 +40,8 @@ contract MultiStrategyDistributionManager is AbstractDistributionManager {
         emit StrategiesInitialized(_strategies);
     }
 
-    /// @notice Checks if distribution is ready based on cycle completion, votes, and yield
-    /// @return ready True if cycle is complete, there are votes, recipients, and sufficient yield
+    /// @notice Checks if distribution is ready based on cycle completion, votes, recipients, strategies, and yield
+    /// @return ready True if cycle is complete, there are votes, recipients, configured strategies, and sufficient yield
     function isDistributionReady() public view override returns (bool ready) {
         if (!cycleManager.isCycleComplete()) return false;
 
@@ -51,7 +51,16 @@ contract MultiStrategyDistributionManager is AbstractDistributionManager {
         uint256 recipientCount = recipientRegistry.getRecipientCount();
         if (recipientCount == 0) return false;
 
-        return yieldModule.yieldAccrued() >= recipientCount;
+        uint256 strategyCount = strategies.length;
+        if (strategyCount == 0) return false;
+
+        uint256 yieldAmount = yieldModule.yieldAccrued();
+        if (yieldAmount == 0) return false;
+
+        // Require enough yield so that, after equal split across strategies,
+        // each strategy can distribute at least one unit per recipient.
+        uint256 minRequiredYield = recipientCount * strategyCount;
+        return yieldAmount >= minRequiredYield;
     }
 
     /// @notice Claims yield and distributes equally to all strategies
