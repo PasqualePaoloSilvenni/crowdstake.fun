@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {AbstractVotingModule} from "../abstracts/AbstractVotingModule.sol";
+import {AbstractVotingModule} from "../abstract/AbstractVotingModule.sol";
 import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
 
 /// @title BasisPointsVotingModule

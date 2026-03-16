@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BaseRecipientRegistry} from "../abstracts/BaseRecipientRegistry.sol";
+import {BaseRecipientRegistry} from "../abstract/BaseRecipientRegistry.sol";
 
 /// @title AdminRecipientRegistry
 /// @notice Admin-controlled registry for managing yield recipients with queue-based updates
