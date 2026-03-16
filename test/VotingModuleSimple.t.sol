@@ -8,7 +8,7 @@ import {TokenBasedVotingPower} from "../src/modules/strategies/TokenBasedVotingP
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
-import {CycleModule} from "../src/CycleModule.sol";
+import {CycleModule} from "../src/modules/CycleModule.sol";
 
 // Simple mock token for testing (non-upgradeable)
 contract MockToken is IVotes {

@@ -12,7 +12,7 @@ import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Vo
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
-import {CycleModule} from "../src/CycleModule.sol";
+import {CycleModule} from "../src/modules/CycleModule.sol";
 
 // Mock token implementation for testing
 contract MockToken is ERC20, ERC20Votes, ERC20Permit {

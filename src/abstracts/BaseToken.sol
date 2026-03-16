@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IBreadKitToken} from "./interfaces/IBreadKitToken.sol";
+import {IBreadKitToken} from "../interfaces/IBreadKitToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@solady/contracts/auth/Ownable.sol";
 import {

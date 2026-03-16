@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IDistributionManager} from "../../interfaces/IDistributionManager.sol";
+import {IDistributionManager} from "../interfaces/IDistributionManager.sol";
 
 /// @title AutomationBase
 /// @notice Abstract base contract for automation providers

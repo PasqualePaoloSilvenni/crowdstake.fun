@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Ownable} from "@solady/contracts/auth/Ownable.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {DefaultYieldClaimer} from "./DefaultYieldClaimer.sol";
+import {DefaultYieldClaimer} from "./modules/DefaultYieldClaimer.sol";
 
 contract BreadKitFactory is Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
