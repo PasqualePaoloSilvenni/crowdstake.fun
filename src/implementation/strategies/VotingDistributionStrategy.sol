@@ -62,7 +62,7 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
             }
         }
 
-        emit Distributed(amount);
+        emit Distributed(msg.sender, amount);
     }
 
     /// @notice Updates the voting module

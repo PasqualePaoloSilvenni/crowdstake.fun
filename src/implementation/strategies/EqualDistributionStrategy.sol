@@ -36,6 +36,6 @@ contract EqualDistributionStrategy is AbstractDistributionStrategy {
             yieldToken.safeTransfer(recipients[i], amountPerRecipient);
         }
 
-        emit Distributed(amount);
+        emit Distributed(msg.sender, amount);
     }
 }
