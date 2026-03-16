@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BaseRecipientRegistry} from "../../abstract/BaseRecipientRegistry.sol";
+import {AbstractRecipientRegistry} from "../../abstract/AbstractRecipientRegistry.sol";
 
 /// @title VotingRecipientRegistry
 /// @notice Democratic registry where all current recipients must vote to add new recipients
 /// @dev Requires 100% unanimous consent from all current recipients to add new ones
 /// @dev Proposals expire after 7 days if not executed
 /// @author BreadKit Protocol
-contract VotingRecipientRegistry is BaseRecipientRegistry {
+contract VotingRecipientRegistry is AbstractRecipientRegistry {
     /// @notice Structure containing all information about a proposal
     /// @dev Proposals can be for adding or removing recipients
     struct Proposal {

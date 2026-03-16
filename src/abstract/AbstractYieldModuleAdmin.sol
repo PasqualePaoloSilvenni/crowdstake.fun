@@ -6,10 +6,10 @@ import {IERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgra
 import {IYieldModuleAdmin} from "../interfaces/IYieldModuleAdmin.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// @title YieldModuleAdmin
+/// @title AbstractYieldModuleAdmin
 /// @notice Admin extension of the yield module that adds administrative functions
 /// @dev This module inherits from YieldModule and adds admin-only functions
-abstract contract YieldModuleAdmin is IYieldModuleAdmin, OwnableUpgradeable {
+abstract contract AbstractYieldModuleAdmin is IYieldModuleAdmin, OwnableUpgradeable {
     using SafeERC20 for IERC20;
     /// @notice The address authorized to claim yield
     address public yieldClaimer;

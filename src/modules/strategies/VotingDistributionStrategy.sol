@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BaseDistributionStrategy} from "../../abstract/BaseDistributionStrategy.sol";
+import {AbstractDistributionStrategy} from "../../abstract/AbstractDistributionStrategy.sol";
 import {IVotingModule} from "../../interfaces/IVotingModule.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,7 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title VotingDistributionStrategy
 /// @notice Distributes yield based on voting results
 /// @dev Implements proportional distribution based on vote counts using recipient registry
-contract VotingDistributionStrategy is BaseDistributionStrategy {
+contract VotingDistributionStrategy is AbstractDistributionStrategy {
     using SafeERC20 for IERC20;
 
     /// @notice Module that provides the current vote distribution weights
@@ -23,7 +23,7 @@ contract VotingDistributionStrategy is BaseDistributionStrategy {
     /// @param _recipientRegistry Address of the recipient registry
     /// @param _votingModule Address of the voting module
     function initialize(address _yieldToken, address _recipientRegistry, address _votingModule) external initializer {
-        __BaseDistributionStrategy_init(_yieldToken, _recipientRegistry);
+        __AbstractDistributionStrategy_init(_yieldToken, _recipientRegistry);
         if (_votingModule == address(0)) revert ZeroAddress();
         votingModule = IVotingModule(_votingModule);
     }
