@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BaseRecipientRegistry} from "../abstract/BaseRecipientRegistry.sol";
+import {BaseRecipientRegistry} from "../../abstract/BaseRecipientRegistry.sol";
 
 /// @title VotingRecipientRegistry
 /// @notice Democratic registry where all current recipients must vote to add new recipients
