@@ -9,9 +9,8 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title BaseDistributionStrategy
-/// @notice Abstract base contract for distribution strategies that also acts as a module
-/// @dev Provides common functionality for yield distribution strategies using recipient registry
-///      Merges functionality from DistributionStrategyModule for single strategy deployment
+/// @notice Abstract base for distribution strategies that split yield among registry recipients
+/// @dev Concrete strategies implement `_distribute` to define how yield is allocated
 abstract contract BaseDistributionStrategy is Initializable, IDistributionStrategy, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -19,34 +18,30 @@ abstract contract BaseDistributionStrategy is Initializable, IDistributionStrate
     error ZeroAmount();
     error NoRecipients();
 
+    /// @notice ERC-20 token being distributed as yield
     IERC20 public yieldToken;
+    /// @notice Registry that supplies the list of eligible recipients
     IRecipientRegistry public recipientRegistry;
-    address public distributionManager;
 
     /// @dev Initializes the base distribution strategy
     /// @param _yieldToken Address of the yield token to distribute
     /// @param _recipientRegistry Address of the recipient registry
-    /// @param _distributionManager Address of the distribution manager
-    function __BaseDistributionStrategy_init(
-        address _yieldToken,
-        address _recipientRegistry,
-        address _distributionManager
-    ) internal onlyInitializing {
+    function __BaseDistributionStrategy_init(address _yieldToken, address _recipientRegistry)
+        internal
+        onlyInitializing
+    {
         __Ownable_init(msg.sender);
-        __BaseDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry, _distributionManager);
+        __BaseDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry);
     }
 
-    function __BaseDistributionStrategy_init_unchained(
-        address _yieldToken,
-        address _recipientRegistry,
-        address _distributionManager
-    ) internal onlyInitializing {
+    function __BaseDistributionStrategy_init_unchained(address _yieldToken, address _recipientRegistry)
+        internal
+        onlyInitializing
+    {
         if (_yieldToken == address(0)) revert ZeroAddress();
         if (_recipientRegistry == address(0)) revert ZeroAddress();
-        if (_distributionManager == address(0)) revert ZeroAddress();
         yieldToken = IERC20(_yieldToken);
         recipientRegistry = IRecipientRegistry(_recipientRegistry);
-        distributionManager = _distributionManager;
     }
 
     /// @inheritdoc IDistributionStrategy
@@ -70,11 +65,5 @@ abstract contract BaseDistributionStrategy is Initializable, IDistributionStrate
     /// @return Array of recipient addresses
     function _getRecipients() internal view returns (address[] memory) {
         return recipientRegistry.getRecipients();
-    }
-
-    /// @notice Modifier to restrict access to distribution manager
-    modifier onlyDistributionManager() {
-        require(msg.sender == distributionManager, "Only distribution manager");
-        _;
     }
 }
