@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {ChainlinkAutomation} from "../../src/modules/automation/ChainlinkAutomation.sol";
-import {AutomationBase} from "../../src/abstract/AutomationBase.sol";
+import {AutomationBase} from "../../src/base/AutomationBase.sol";
 // import "../../src/modules/automation/GelatoAutomation.sol";
 import {MockDistributionManager} from "../mocks/MockDistributionManager.sol";
 import {IDistributionModule} from "../../src/interfaces/IDistributionModule.sol";
