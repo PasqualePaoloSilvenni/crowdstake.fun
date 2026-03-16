@@ -22,31 +22,46 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
     error NoRecipients();
     /// @notice Thrown when the yield amount is too small to distribute at least 1 wei per recipient
     error InsufficientYieldForRecipients();
+    /// @notice Thrown when caller is not the distribution manager
+    error OnlyDistributionManager();
 
     /// @notice ERC-20 token being distributed as yield
     IERC20 public yieldToken;
     /// @notice Registry that supplies the list of eligible recipients
     IRecipientRegistry public recipientRegistry;
+    /// @notice The distribution manager authorized to call distribute
+    address public distributionManager;
+
+    /// @dev Restricts access to the distribution manager
+    modifier onlyDistributionManager() {
+        if (msg.sender != distributionManager) revert OnlyDistributionManager();
+        _;
+    }
 
     /// @dev Initializes the base distribution strategy
     /// @param _yieldToken Address of the yield token to distribute
     /// @param _recipientRegistry Address of the recipient registry
-    function __AbstractDistributionStrategy_init(address _yieldToken, address _recipientRegistry)
-        internal
-        onlyInitializing
-    {
+    /// @param _distributionManager Address of the distribution manager authorized to call distribute
+    function __AbstractDistributionStrategy_init(
+        address _yieldToken,
+        address _recipientRegistry,
+        address _distributionManager
+    ) internal onlyInitializing {
         __Ownable_init(msg.sender);
-        __AbstractDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry);
+        __AbstractDistributionStrategy_init_unchained(_yieldToken, _recipientRegistry, _distributionManager);
     }
 
-    function __AbstractDistributionStrategy_init_unchained(address _yieldToken, address _recipientRegistry)
-        internal
-        onlyInitializing
-    {
+    function __AbstractDistributionStrategy_init_unchained(
+        address _yieldToken,
+        address _recipientRegistry,
+        address _distributionManager
+    ) internal onlyInitializing {
         if (_yieldToken == address(0)) revert ZeroAddress();
         if (_recipientRegistry == address(0)) revert ZeroAddress();
+        if (_distributionManager == address(0)) revert ZeroAddress();
         yieldToken = IERC20(_yieldToken);
         recipientRegistry = IRecipientRegistry(_recipientRegistry);
+        distributionManager = _distributionManager;
     }
 
     /// @inheritdoc IDistributionStrategy

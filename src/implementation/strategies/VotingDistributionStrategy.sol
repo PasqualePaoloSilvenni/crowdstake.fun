@@ -24,14 +24,20 @@ contract VotingDistributionStrategy is AbstractDistributionStrategy {
     /// @param _yieldToken Address of the yield token to distribute
     /// @param _recipientRegistry Address of the recipient registry
     /// @param _votingModule Address of the voting module
-    function initialize(address _yieldToken, address _recipientRegistry, address _votingModule) external initializer {
-        __AbstractDistributionStrategy_init(_yieldToken, _recipientRegistry);
+    /// @param _distributionManager Address of the distribution manager
+    function initialize(
+        address _yieldToken,
+        address _recipientRegistry,
+        address _votingModule,
+        address _distributionManager
+    ) external initializer {
+        __AbstractDistributionStrategy_init(_yieldToken, _recipientRegistry, _distributionManager);
         if (_votingModule == address(0)) revert ZeroAddress();
         votingModule = IVotingModule(_votingModule);
     }
 
     /// @dev Distributes amount based on voting weights
-    function distribute(uint256 amount) external override {
+    function distribute(uint256 amount) external override onlyDistributionManager {
         if (amount == 0) revert ZeroAmount();
 
         address[] memory recipients = recipientRegistry.getRecipients();
