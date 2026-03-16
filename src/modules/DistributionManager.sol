@@ -5,6 +5,7 @@ import {IDistributionManager} from "../interfaces/IDistributionManager.sol";
 import {IYieldModule} from "../interfaces/IYieldModule.sol";
 import {IVotingModule} from "../interfaces/IVotingModule.sol";
 import {IRecipientRegistry} from "../interfaces/IRecipientRegistry.sol";
+import {ICycleModule} from "../interfaces/ICycleModule.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -22,8 +23,8 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
     IVotingModule public votingModule;
     /// @notice Registry of eligible distribution recipients
     IRecipientRegistry public recipientRegistry;
-    /// @notice Address authorised to trigger new distribution cycles
-    address public cycleManager;
+    /// @notice Cycle module that governs distribution timing
+    ICycleModule public cycleManager;
     /// @notice ERC-20 token from which yield is claimed and distributed
     IERC20 public baseToken;
 
@@ -53,7 +54,7 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
         if (_baseToken == address(0)) revert ZeroAddress();
         if (_votingModule == address(0)) revert ZeroAddress();
 
-        cycleManager = _cycleManager;
+        cycleManager = ICycleModule(_cycleManager);
         recipientRegistry = IRecipientRegistry(_recipientRegistry);
         baseToken = IERC20(_baseToken);
         votingModule = IVotingModule(_votingModule);

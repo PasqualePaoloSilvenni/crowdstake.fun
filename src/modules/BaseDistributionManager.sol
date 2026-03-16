@@ -5,7 +5,6 @@ import {DistributionManager} from "./DistributionManager.sol";
 import {IDistributionStrategy} from "../interfaces/IDistributionStrategy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ICycleModule} from "../interfaces/ICycleModule.sol";
 
 /// @title BaseDistributionManager
 /// @notice Concrete implementation of DistributionManager that distributes to a single strategy
@@ -51,7 +50,7 @@ contract BaseDistributionManager is DistributionManager {
     /// @notice Checks if distribution is ready based on cycle completion, votes, and yield
     /// @return ready True if cycle is complete, there are votes, recipients, and sufficient yield
     function isDistributionReady() public view override returns (bool ready) {
-        if (!ICycleModule(cycleManager).isCycleComplete()) return false;
+        if (!cycleManager.isCycleComplete()) return false;
 
         uint256 totalVotes = getTotalCurrentVotingPower();
         if (totalVotes == 0) return false;
@@ -66,7 +65,7 @@ contract BaseDistributionManager is DistributionManager {
     /// @dev Can be called by owner or cycle manager
     function claimAndDistribute() external override {
         // Allow both owner and cycle manager to call this
-        require(msg.sender == owner() || msg.sender == cycleManager, "Unauthorized");
+        require(msg.sender == owner() || msg.sender == address(cycleManager), "Unauthorized");
 
         if (!isDistributionReady()) revert DistributionNotReady();
         if (address(distributionStrategy) == address(0)) revert("No strategy set");
