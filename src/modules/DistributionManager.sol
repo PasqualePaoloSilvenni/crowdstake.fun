@@ -16,10 +16,15 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDistributionManager {
     using SafeERC20 for IERC20;
 
+    /// @notice Module that exposes yield accrual on the base token
     IYieldModule public yieldModule;
+    /// @notice Module that tracks voting power and distribution weights
     IVotingModule public votingModule;
+    /// @notice Registry of eligible distribution recipients
     IRecipientRegistry public recipientRegistry;
+    /// @notice Address authorised to trigger new distribution cycles
     address public cycleManager;
+    /// @notice ERC-20 token from which yield is claimed and distributed
     IERC20 public baseToken;
 
     /// @dev Initializes the distribution manager
@@ -93,11 +98,5 @@ abstract contract DistributionManager is Initializable, OwnableUpgradeable, IDis
         for (uint256 i = 0; i < distribution.length; i++) {
             totalPower += distribution[i];
         }
-    }
-
-    /// @notice Modifier to restrict access to cycle manager
-    modifier onlyCycleManager() {
-        require(msg.sender == cycleManager, "Only cycle manager");
-        _;
     }
 }
