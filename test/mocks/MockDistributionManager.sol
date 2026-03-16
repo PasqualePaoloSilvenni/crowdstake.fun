@@ -55,9 +55,9 @@ contract MockDistributionManager is IDistributionManager {
         return true;
     }
 
-    /// @notice Executes the distribution
+    /// @notice Claims and distributes yield
     /// @dev Handles all distribution logic
-    function executeDistribution() external override {
+    function claimAndDistribute() external override {
         // Verify conditions again
         require(block.number >= lastDistributionBlock + cycleLength, "Too soon");
         require(currentVotes > 0, "No votes");
