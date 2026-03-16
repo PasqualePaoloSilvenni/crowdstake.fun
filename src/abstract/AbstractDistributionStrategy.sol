@@ -48,4 +48,7 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
         yieldToken = IERC20(_yieldToken);
         recipientRegistry = IRecipientRegistry(_recipientRegistry);
     }
+
+    /// @inheritdoc IDistributionStrategy
+    function distribute(uint256 amount) external virtual override;
 }
