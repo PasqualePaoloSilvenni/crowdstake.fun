@@ -24,10 +24,6 @@ abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgrad
     /// @dev Maps recipient address to true if active, false otherwise
     mapping(address => bool) public isRecipientMapping;
 
-    /// @notice Mapping to quickly check if an address is a queued recipient
-    /// @dev Maps recipient address to true if queued, false otherwise
-    mapping(address => bool) public isQueued;
-
     // Events and errors are inherited from IRecipientRegistry interface
 
     /// @notice Internal function to queue a recipient for addition
@@ -40,8 +36,13 @@ abstract contract AbstractRecipientRegistry is IRecipientRegistry, OwnableUpgrad
         if (recipient == address(0)) revert InvalidRecipient();
         if (isRecipientMapping[recipient]) revert RecipientAlreadyExists();
 
-        if (isQueued[recipient]) revert RecipientAlreadyQueued();
-        isQueued[recipient] = true;
+        // Check if already queued to prevent duplicates
+        for (uint256 i = 0; i < queuedRecipientsForAddition.length; i++) {
+            if (queuedRecipientsForAddition[i] == recipient) {
+                revert RecipientAlreadyQueued();
+            }
+        }
+
         queuedRecipientsForAddition.push(recipient);
         emit RecipientQueued(recipient, true);
     }
