@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IBreadKitToken} from "./interfaces/IBreadKitToken.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IToken} from "../interfaces/IToken.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Ownable} from "@solady/contracts/auth/Ownable.sol";
 import {
     ERC20VotesUpgradeable,
     ERC20Upgradeable
 } from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 
-abstract contract BaseToken is ERC20VotesUpgradeable, Ownable, IBreadKitToken {
+abstract contract AbstractToken is ERC20VotesUpgradeable, Ownable, IToken {
     error MintZero();
     error BurnZero();
     error ClaimZero();
@@ -34,17 +34,32 @@ abstract contract BaseToken is ERC20VotesUpgradeable, Ownable, IBreadKitToken {
 
     /// @dev MUST implement in derived contract
     /// logic to deposit user collateral into yield bearing position
-    function _deposit(uint256 /*amount_*/ ) internal virtual {}
+    function _deposit(
+        uint256 /*amount_*/
+    )
+        internal
+        virtual {}
 
     /// @dev OPTIONAL to implement in derived contract
     /// logic to deposit native token into yield bearing position
-    function _depositNative(uint256 /*amount_*/ ) internal virtual {
+    function _depositNative(
+        uint256 /*amount_*/
+    )
+        internal
+        virtual
+    {
         revert("native deposits not supported");
     }
 
     /// @dev MUST implement in derived contract
     /// logic to remit collateral value to user
-    function _remit(address, /*receiver_*/ uint256 /*amount_*/ ) internal virtual {}
+    function _remit(
+        address,
+        /*receiver_*/
+        uint256 /*amount_*/
+    )
+        internal
+        virtual {}
 
     /// @dev MUST implement in derived contract
     /// logic to calculate unclaimed accrued yield

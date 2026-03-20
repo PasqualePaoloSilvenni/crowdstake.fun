@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "../test/mocks/MockDistributionManagerSimple.sol";
-import "../src/modules/automation/ChainlinkAutomation.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {MockDistributionManagerSimple} from "../test/mocks/MockDistributionManagerSimple.sol";
+import {ChainlinkAutomation} from "../src/implementation/automation/ChainlinkAutomation.sol";
 
 /// @title DeployMockAutomation
 /// @notice Deploy script for mock distribution manager with Chainlink automation
@@ -13,23 +13,23 @@ contract DeployMockAutomation is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy MockDistributionManagerSimple
-        MockDistributionManagerSimple mockDM = new MockDistributionManagerSimple();
-        console.log("MockDistributionManagerSimple deployed at:", address(mockDM));
+        MockDistributionManagerSimple mock = new MockDistributionManagerSimple();
+        console.log("MockDistributionManagerSimple deployed at:", address(mock));
         console.log("Will trigger every 200 blocks");
 
         // Deploy ChainlinkAutomation with MockDistributionManagerSimple
-        ChainlinkAutomation chainlink = new ChainlinkAutomation(address(mockDM));
+        ChainlinkAutomation chainlink = new ChainlinkAutomation(address(mock));
         console.log("ChainlinkAutomation deployed at:", address(chainlink));
 
         // Log initial state
         console.log("Current block:", block.number);
-        console.log("Last distribution block:", mockDM.getLastDistributionBlock());
-        console.log("Blocks until next distribution:", mockDM.blocksUntilDistribution());
-        console.log("Is distribution ready:", mockDM.isDistributionReady());
+        console.log("Last distribution block:", mock.getLastDistributionBlock());
+        console.log("Blocks until next distribution:", mock.blocksUntilDistribution());
+        console.log("Is distribution ready:", mock.isDistributionReady());
 
         vm.stopBroadcast();
 
-        return (address(mockDM), address(chainlink));
+        return (address(mock), address(chainlink));
     }
 
     /// @notice Deploy only the mock distribution manager
@@ -37,12 +37,12 @@ contract DeployMockAutomation is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        MockDistributionManagerSimple mockDM = new MockDistributionManagerSimple();
-        console.log("MockDistributionManagerSimple deployed at:", address(mockDM));
+        MockDistributionManagerSimple mock = new MockDistributionManagerSimple();
+        console.log("MockDistributionManagerSimple deployed at:", address(mock));
 
         vm.stopBroadcast();
 
-        return address(mockDM);
+        return address(mock);
     }
 
     /// @notice Deploy chainlink automation with existing distribution manager

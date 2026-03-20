@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../../interfaces/IDistributionManager.sol";
+import {IDistributionManager} from "../interfaces/IDistributionManager.sol";
 
-/// @title AutomationBase
+/// @title AbstractAutomation
 /// @notice Abstract base contract for automation providers
 /// @dev Inherit this contract to create provider-specific automation implementations
-abstract contract AutomationBase is IDistributionManager {
-    IDistributionManager public immutable distributionManager;
+abstract contract AbstractAutomation {
+    IDistributionManager public immutable DISTRIBUTION_MANAGER;
 
     event AutomationExecuted(address indexed executor, uint256 blockNumber);
 
@@ -15,14 +15,14 @@ abstract contract AutomationBase is IDistributionManager {
 
     constructor(address _distributionManager) {
         require(_distributionManager != address(0), "Invalid distribution manager");
-        distributionManager = IDistributionManager(_distributionManager);
+        DISTRIBUTION_MANAGER = IDistributionManager(_distributionManager);
     }
 
     /// @notice Checks if distribution is ready
     /// @dev Delegates to DistributionManager for condition checking
     /// @return ready Whether the distribution conditions are met
-    function isDistributionReady() public view virtual override returns (bool ready) {
-        return distributionManager.isDistributionReady();
+    function isDistributionReady() public view virtual returns (bool ready) {
+        return DISTRIBUTION_MANAGER.isDistributionReady();
     }
 
     /// @notice Gets the automation data for execution
@@ -38,10 +38,10 @@ abstract contract AutomationBase is IDistributionManager {
 
     /// @notice Executes the distribution
     /// @dev Delegates to DistributionManager for execution
-    function executeDistribution() public virtual override {
-        if (!distributionManager.isDistributionReady()) revert NotResolved();
+    function executeDistribution() public virtual {
+        if (!DISTRIBUTION_MANAGER.isDistributionReady()) revert NotResolved();
 
-        distributionManager.executeDistribution();
+        DISTRIBUTION_MANAGER.claimAndDistribute();
 
         emit AutomationExecuted(msg.sender, block.number);
     }

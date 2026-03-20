@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseRecipientRegistry.sol";
+import {AbstractRecipientRegistry} from "../../abstract/AbstractRecipientRegistry.sol";
 
 /// @title RecipientRegistry
 /// @notice Simple admin-controlled registry for managing yield recipients with queued changes
-/// @dev Simple implementation of BaseRecipientRegistry with admin-only queueing
+/// @dev Simple implementation of AbstractRecipientRegistry with admin-only queueing
 /// @author BreadKit Protocol
-contract RecipientRegistry is BaseRecipientRegistry {
+contract RecipientRegistry is AbstractRecipientRegistry {
     /// @notice Initialize the registry with an admin
     /// @dev This function replaces the constructor for upgradeable contracts
     /// @dev Sets the admin as the owner who can queue recipient changes

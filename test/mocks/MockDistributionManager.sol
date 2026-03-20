@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../../src/interfaces/IDistributionManager.sol";
-import "../../src/interfaces/IDistributionModule.sol";
+import {IDistributionManager} from "../../src/interfaces/IDistributionManager.sol";
+import {IDistributionModule} from "../../src/interfaces/IDistributionModule.sol";
 
 /// @title MockDistributionManager
 /// @notice Mock implementation of IDistributionManager for testing
 /// @dev Contains distribution readiness logic and execution
 contract MockDistributionManager is IDistributionManager {
-    IDistributionModule public immutable distributionModule;
+    IDistributionModule public immutable DISTRIBUTION_MODULE;
 
     uint256 public cycleLength;
     uint256 public lastDistributionBlock;
@@ -23,7 +23,7 @@ contract MockDistributionManager is IDistributionManager {
 
     constructor(address _distributionModule, uint256 _cycleLength) {
         require(_distributionModule != address(0), "Invalid distribution module");
-        distributionModule = IDistributionModule(_distributionModule);
+        DISTRIBUTION_MODULE = IDistributionModule(_distributionModule);
         cycleLength = _cycleLength;
         lastDistributionBlock = block.number;
         currentCycleNumber = 1;
@@ -55,9 +55,9 @@ contract MockDistributionManager is IDistributionManager {
         return true;
     }
 
-    /// @notice Executes the distribution
+    /// @notice Claims and distributes yield
     /// @dev Handles all distribution logic
-    function executeDistribution() external override {
+    function claimAndDistribute() external override {
         // Verify conditions again
         require(block.number >= lastDistributionBlock + cycleLength, "Too soon");
         require(currentVotes > 0, "No votes");
@@ -69,7 +69,7 @@ contract MockDistributionManager is IDistributionManager {
         currentCycleNumber++;
 
         // Call distribution module to handle the actual distribution
-        distributionModule.distributeYield();
+        DISTRIBUTION_MODULE.distributeYield();
 
         // Emit event
         emit DistributionExecuted(block.number, availableYield, currentVotes);

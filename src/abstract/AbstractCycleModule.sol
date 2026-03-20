@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../interfaces/ICycleModule.sol";
+import {ICycleModule} from "../interfaces/ICycleModule.sol";
 
 /// @title AbstractCycleModule
 /// @notice Abstract contract providing core cycle functionality with fixed cycle implementation
@@ -64,18 +64,26 @@ abstract contract AbstractCycleModule is ICycleModule {
 
     /// @notice Modifier to restrict access to authorized addresses
     modifier onlyAuthorized() {
-        if (!authorized[msg.sender]) {
-            revert NotAuthorized();
-        }
+        _onlyAuthorized();
         _;
     }
 
     /// @notice Modifier to ensure module is initialized
     modifier onlyInitialized() {
+        _onlyInitialized();
+        _;
+    }
+
+    function _onlyAuthorized() internal view {
+        if (!authorized[msg.sender]) {
+            revert NotAuthorized();
+        }
+    }
+
+    function _onlyInitialized() internal view {
         if (!initialized) {
             revert NotInitialized();
         }
-        _;
     }
 
     /// @notice Constructor sets up initial authorization

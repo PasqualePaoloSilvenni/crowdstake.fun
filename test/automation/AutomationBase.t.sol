@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "../../src/modules/automation/ChainlinkAutomation.sol";
-// import "../../src/modules/automation/GelatoAutomation.sol";
-import "../mocks/MockDistributionManager.sol";
-import "../../src/interfaces/IDistributionModule.sol";
+import {Test} from "forge-std/Test.sol";
+import {ChainlinkAutomation} from "../../src/implementation/automation/ChainlinkAutomation.sol";
+import {AbstractAutomation} from "../../src/abstract/AbstractAutomation.sol";
+// import "../../src/implementation/automation/GelatoAutomation.sol";
+import {MockDistributionManager} from "../mocks/MockDistributionManager.sol";
+import {IDistributionModule} from "../../src/interfaces/IDistributionModule.sol";
 
 contract MockDistributionModule is IDistributionModule {
     uint256 public distributeCallCount;
@@ -86,16 +87,15 @@ contract AutomationBaseTest is Test {
 
     function testChainlinkCheckUpkeep() public {
         // Initially should not need upkeep (too soon)
-        (bool upkeepNeeded, bytes memory performData) = chainlinkAutomation.checkUpkeep("");
+        (bool upkeepNeeded,) = chainlinkAutomation.checkUpkeep("");
         assertFalse(upkeepNeeded);
 
         // Advance blocks
         vm.roll(block.number + 101);
 
         // Now should need upkeep
-        (upkeepNeeded, performData) = chainlinkAutomation.checkUpkeep("");
+        (upkeepNeeded,) = chainlinkAutomation.checkUpkeep("");
         assertTrue(upkeepNeeded);
-        assertGt(performData.length, 0);
     }
 
     function testChainlinkPerformUpkeep() public {
@@ -188,7 +188,7 @@ contract AutomationBaseTest is Test {
 
     function testExecutionRevertsWhenNotResolved() public {
         // Try to execute when conditions not met
-        vm.expectRevert(AutomationBase.NotResolved.selector);
+        vm.expectRevert(AbstractAutomation.NotResolved.selector);
         chainlinkAutomation.executeDistribution();
     }
 

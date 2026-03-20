@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "./mocks/MockDistributionManagerSimple.sol";
+import {Test} from "forge-std/Test.sol";
+import {MockDistributionManagerSimple} from "./mocks/MockDistributionManagerSimple.sol";
 
 contract MockDistributionManagerTest is Test {
     MockDistributionManagerSimple public manager;
@@ -46,10 +46,10 @@ contract MockDistributionManagerTest is Test {
         assertEq(manager.blocksUntilDistribution(), 0, "Should still be 0 when overdue");
     }
 
-    function test_ExecuteDistribution() public {
+    function test_ClaimAndDistribute() public {
         // Try to execute too early
         vm.expectRevert("Not ready");
-        manager.executeDistribution();
+        manager.claimAndDistribute();
 
         // Fast forward 200 blocks
         vm.roll(block.number + 200);
@@ -57,7 +57,7 @@ contract MockDistributionManagerTest is Test {
         // Execute distribution
         vm.expectEmit(true, true, true, true);
         emit MockDistributionExecuted(block.number);
-        manager.executeDistribution();
+        manager.claimAndDistribute();
 
         // Check state after execution
         assertEq(manager.getLastDistributionBlock(), block.number, "Last distribution should be updated");
@@ -73,17 +73,17 @@ contract MockDistributionManagerTest is Test {
         // First distribution
         vm.roll(startBlock + 200);
         assertTrue(manager.isDistributionReady());
-        manager.executeDistribution();
+        manager.claimAndDistribute();
 
         // Second distribution
         vm.roll(block.number + 200);
         assertTrue(manager.isDistributionReady());
-        manager.executeDistribution();
+        manager.claimAndDistribute();
 
         // Third distribution
         vm.roll(block.number + 200);
         assertTrue(manager.isDistributionReady());
-        manager.executeDistribution();
+        manager.claimAndDistribute();
 
         // Should have executed 3 distributions
         assertEq(manager.getLastDistributionBlock(), startBlock + 600);

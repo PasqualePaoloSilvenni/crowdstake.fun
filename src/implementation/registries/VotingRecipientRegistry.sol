@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./BaseRecipientRegistry.sol";
+import {AbstractRecipientRegistry} from "../../abstract/AbstractRecipientRegistry.sol";
 
 /// @title VotingRecipientRegistry
 /// @notice Democratic registry where all current recipients must vote to add new recipients
 /// @dev Requires 100% unanimous consent from all current recipients to add new ones
 /// @dev Proposals expire after 7 days if not executed
 /// @author BreadKit Protocol
-contract VotingRecipientRegistry is BaseRecipientRegistry {
+contract VotingRecipientRegistry is AbstractRecipientRegistry {
     /// @notice Structure containing all information about a proposal
     /// @dev Proposals can be for adding or removing recipients
     struct Proposal {
@@ -97,10 +97,7 @@ contract VotingRecipientRegistry is BaseRecipientRegistry {
     /// @param admin The address that will have administrative control (limited to emergency functions)
     /// @param initialRecipients Array of addresses that will be the initial voting recipients
     /// @param _proposalExpiry Time limit in seconds for how long proposals remain valid for voting
-    function initialize(address admin, address[] memory initialRecipients, uint256 _proposalExpiry)
-        public
-        initializer
-    {
+    function initialize(address admin, address[] memory initialRecipients, uint256 _proposalExpiry) public initializer {
         __Ownable_init(admin);
 
         if (initialRecipients.length == 0) revert NoRecipients();

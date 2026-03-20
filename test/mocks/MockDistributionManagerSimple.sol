@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "../../src/interfaces/IDistributionManager.sol";
+import {IDistributionManager} from "../../src/interfaces/IDistributionManager.sol";
 
 /// @title MockDistributionManagerSimple
 /// @notice Mock implementation that returns true for distribution readiness every 200 blocks
@@ -23,7 +23,7 @@ contract MockDistributionManagerSimple is IDistributionManager {
     }
 
     /// @notice Mock execution that simply updates the last distribution block
-    function executeDistribution() external override {
+    function claimAndDistribute() external override {
         require(block.number >= lastDistributionBlock + BLOCKS_PER_CYCLE, "Not ready");
 
         lastDistributionBlock = block.number;

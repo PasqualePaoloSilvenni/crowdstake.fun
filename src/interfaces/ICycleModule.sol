@@ -28,4 +28,12 @@ interface ICycleModule {
     /// @notice Updates the cycle length for future cycles
     /// @param newCycleLength The new cycle length in blocks
     function updateCycleLength(uint256 newCycleLength) external;
+
+    /// @notice Gets the block number when the current cycle started
+    /// @return The block number when the current cycle started
+    function lastCycleStartBlock() external view returns (uint256);
+
+    /// @notice Gets the length of each cycle in blocks
+    /// @return The cycle length in blocks
+    function cycleLength() external view returns (uint256);
 }
