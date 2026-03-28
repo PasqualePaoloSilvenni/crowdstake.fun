@@ -10,7 +10,7 @@ import {IBreadkitNFT} from "../../interfaces/IBreadkitNFT.sol";
 ///      Primary compatibility path is distribute(uint256), while executeStrategy(address[]) is
 ///      exposed for explicit user-list execution.
 contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
-    // ============ Storage ============
+    // ============ EIP-7201 Namespaced Storage ============
 
     /// @notice User voting activity state for streak tracking
     /// @param streak Current consecutive voting streak
@@ -20,15 +20,30 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
         uint256 lastVoteCycle;
     }
 
-    /// @notice Current protocol cycle index
-    /// @dev Incremented on every execution path
-    uint256 public currentCycle;
+    /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTStrategy
+    struct VotingStreakNFTStrategyStorage {
+        /// @notice Current protocol cycle index
+        /// @dev Incremented on every execution path
+        uint256 currentCycle;
+        /// @notice Breadkit NFT contract used for streak rewards
+        IBreadkitNFT nftContract;
+        /// @notice Per-user streak tracking
+        mapping(address => UserActivity) userActivity;
+    }
 
-    /// @notice Breadkit NFT contract used for streak rewards
-    IBreadkitNFT public nftContract;
+    // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.VotingStreakNFTStrategy")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant VOTING_STREAK_NFT_STRATEGY_STORAGE =
+        0x378121933e29b8327eb579a304b48403d9f3d86575a5822d7901ea89be3ae900;
 
-    /// @notice Per-user streak tracking
-    mapping(address => UserActivity) public userActivity;
+    function _getVotingStreakNFTStrategyStorage()
+        internal
+        pure
+        returns (VotingStreakNFTStrategyStorage storage $)
+    {
+        assembly {
+            $.slot := VOTING_STREAK_NFT_STRATEGY_STORAGE
+        }
+    }
 
     // ============ Events ============
 
@@ -42,6 +57,22 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @param reason Revert data from the failed external call (UTF-8 bytes of the revert string
     ///               when available, or raw low-level revert payload)
     event NFTMintFailed(address indexed user, bytes reason);
+
+    // ============ Views (ABI-compatible getters) ============
+
+    function currentCycle() external view returns (uint256) {
+        return _getVotingStreakNFTStrategyStorage().currentCycle;
+    }
+
+    function nftContract() external view returns (IBreadkitNFT) {
+        return _getVotingStreakNFTStrategyStorage().nftContract;
+    }
+
+    function userActivity(address user) external view returns (uint256 streak, uint256 lastVoteCycle) {
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        UserActivity storage activity = $.userActivity[user];
+        return (activity.streak, activity.lastVoteCycle);
+    }
 
     // ============ Initializer ============
 
@@ -59,7 +90,8 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
         __AbstractDistributionStrategy_init(_yieldToken, _recipientRegistry, _distributionManager);
         if (_nftContract == address(0)) revert ZeroAddress();
 
-        nftContract = IBreadkitNFT(_nftContract);
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        $.nftContract = IBreadkitNFT(_nftContract);
         emit NFTContractUpdated(address(0), _nftContract);
     }
 
@@ -70,8 +102,9 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     function setNFTContract(address _nftContract) external onlyOwner {
         if (_nftContract == address(0)) revert ZeroAddress();
 
-        address oldAddress = address(nftContract);
-        nftContract = IBreadkitNFT(_nftContract);
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        address oldAddress = address($.nftContract);
+        $.nftContract = IBreadkitNFT(_nftContract);
 
         emit NFTContractUpdated(oldAddress, _nftContract);
     }
@@ -84,7 +117,8 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     function executeStrategy(address[] calldata users) external onlyDistributionManager {
         _incrementCycle();
 
-        uint256 cycle = currentCycle;
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        uint256 cycle = $.currentCycle;
         uint256 length = users.length;
 
         for (uint256 i = 0; i < length; ) {
@@ -104,7 +138,8 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
         _incrementCycle();
 
-        uint256 cycle = currentCycle;
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        uint256 cycle = $.currentCycle;
         uint256 length = users.length;
 
         for (uint256 i = 0; i < length; ) {
@@ -119,14 +154,16 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
     /// @dev Increments cycle counter once per execution
     function _incrementCycle() internal {
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
         unchecked {
-            ++currentCycle;
+            ++$.currentCycle;
         }
     }
 
     /// @dev Updates a single user's streak and attempts mint on exact streak == 10
     function _processUser(address user, uint256 cycle) internal {
-        UserActivity storage activity = userActivity[user];
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        UserActivity storage activity = $.userActivity[user];
 
         // Prevent duplicate processing from resetting streak when user appears more than once in same cycle.
         if (activity.lastVoteCycle == cycle) return;
@@ -143,7 +180,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
         // Reward only at exact 10-streak milestone per requirement.
         if (activity.streak == 10) {
-            try nftContract.mint(user) {
+            try $.nftContract.mint(user) {
                 // no-op
             } catch Error(string memory reason) {
                 emit NFTMintFailed(user, bytes(reason));
