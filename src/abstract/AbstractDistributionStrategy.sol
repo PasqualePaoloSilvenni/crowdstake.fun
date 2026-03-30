@@ -25,18 +25,66 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
     /// @notice Thrown when caller is not the distribution manager
     error OnlyDistributionManager();
 
+    // ============ EIP-7201 Namespaced Storage ============
+
+    /// @custom:storage-location erc7201:crowdstake.storage.AbstractDistributionStrategy
+    struct AbstractDistributionStrategyStorage {
+        /// @notice ERC-20 token being distributed as yield
+        IERC20 yieldToken;
+        /// @notice Registry that supplies the list of eligible recipients
+        IRecipientRegistry recipientRegistry;
+        /// @notice The distribution manager authorized to call distribute
+        address distributionManager;
+        /// @notice Auto-incrementing identifier for distribution events
+        uint256 distributionId;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.AbstractDistributionStrategy")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ABSTRACT_DISTRIBUTION_STRATEGY_STORAGE =
+        0xd9b72b68a5eae26c44c1d8f60779f16423d3cdd4e39b51d418f2feef09419200;
+
+    function _getAbstractDistributionStrategyStorage()
+        internal
+        pure
+        returns (AbstractDistributionStrategyStorage storage $)
+    {
+        assembly {
+            $.slot := ABSTRACT_DISTRIBUTION_STRATEGY_STORAGE
+        }
+    }
+
+    // ============ Public Getters ============
+
     /// @notice ERC-20 token being distributed as yield
-    IERC20 public yieldToken;
+    function yieldToken() public view returns (IERC20) {
+        return _getAbstractDistributionStrategyStorage().yieldToken;
+    }
+
     /// @notice Registry that supplies the list of eligible recipients
-    IRecipientRegistry public recipientRegistry;
+    function recipientRegistry() public view returns (IRecipientRegistry) {
+        return _getAbstractDistributionStrategyStorage().recipientRegistry;
+    }
+
     /// @notice The distribution manager authorized to call distribute
-    address public distributionManager;
+    function distributionManager() public view returns (address) {
+        return _getAbstractDistributionStrategyStorage().distributionManager;
+    }
+
+    function distributionId() public view returns (uint256) {
+        return _getAbstractDistributionStrategyStorage().distributionId;
+    }
+
+    // ============ Modifiers ============
 
     /// @dev Restricts access to the distribution manager
     modifier onlyDistributionManager() {
-        if (msg.sender != distributionManager) revert OnlyDistributionManager();
+        if (msg.sender != _getAbstractDistributionStrategyStorage().distributionManager) {
+            revert OnlyDistributionManager();
+        }
         _;
     }
+
+    // ============ Initialization ============
 
     /// @dev Initializes the base distribution strategy
     /// @param _yieldToken Address of the yield token to distribute
@@ -59,9 +107,11 @@ abstract contract AbstractDistributionStrategy is Initializable, IDistributionSt
         if (_yieldToken == address(0)) revert ZeroAddress();
         if (_recipientRegistry == address(0)) revert ZeroAddress();
         if (_distributionManager == address(0)) revert ZeroAddress();
-        yieldToken = IERC20(_yieldToken);
-        recipientRegistry = IRecipientRegistry(_recipientRegistry);
-        distributionManager = _distributionManager;
+
+        AbstractDistributionStrategyStorage storage $ = _getAbstractDistributionStrategyStorage();
+        $.yieldToken = IERC20(_yieldToken);
+        $.recipientRegistry = IRecipientRegistry(_recipientRegistry);
+        $.distributionManager = _distributionManager;
     }
 
     /// @inheritdoc IDistributionStrategy
