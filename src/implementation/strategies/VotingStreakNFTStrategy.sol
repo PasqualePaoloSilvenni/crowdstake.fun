@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {AbstractDistributionStrategy} from "../../abstract/AbstractDistributionStrategy.sol";
+import {AbstractDistributionManager} from "../../abstract/AbstractDistributionManager.sol";
 import {IBreadkitNFT} from "../../interfaces/IBreadkitNFT.sol";
 
 /// @title VotingStreakNFTStrategy
@@ -24,9 +25,6 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
     /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTStrategy
     struct VotingStreakNFTStrategyStorage {
-        /// @notice Current protocol cycle index
-        /// @dev Incremented on every execution path
-        uint256 currentCycle;
         /// @notice Breadkit NFT contract used for streak rewards
         IBreadkitNFT nftContract;
         /// @notice Per-user streak tracking
@@ -65,7 +63,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     // ============ Views (ABI-compatible getters) ============
 
     function currentCycle() external view returns (uint256) {
-        return _getVotingStreakNFTStrategyStorage().currentCycle;
+        return AbstractDistributionManager(distributionManager).cycleManager().getCurrentCycle();
     }
 
     function nftContract() external view returns (IBreadkitNFT) {
@@ -83,7 +81,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @notice Initializes the strategy
     /// @param _yieldToken Yield token address (required by AbstractDistributionStrategy)
     /// @param _recipientRegistry Recipient registry address (used by distribute path)
-    /// @param _distributionManager Authorized distribution manager
+    /// @param _distributionManager Authorized distribution manager with cycle module
     /// @param _nftContract Breadkit NFT contract address
     function initialize(
         address _yieldToken,
@@ -119,14 +117,10 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @dev Uses calldata loop optimization and does not revert the full loop on mint failure
     /// @param users Users who participated in the current cycle
     function executeStrategy(address[] calldata users) external onlyDistributionManager {
-        _incrementCycle();
-
-        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
-        uint256 cycle = $.currentCycle;
         uint256 length = users.length;
 
         for (uint256 i = 0; i < length; ) {
-            _processUser(users[i], cycle);
+            _processUser(users[i]);
             unchecked {
                 ++i;
             }
@@ -140,14 +134,10 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
         address[] memory users = recipientRegistry.getRecipients();
         if (users.length == 0) revert NoRecipients();
 
-        _incrementCycle();
-
-        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
-        uint256 cycle = $.currentCycle;
         uint256 length = users.length;
 
         for (uint256 i = 0; i < length; ) {
-            _processUser(users[i], cycle);
+            _processUser(users[i]);
             unchecked {
                 ++i;
             }
@@ -156,17 +146,10 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
     // ============ Internal ============
 
-    /// @dev Increments cycle counter once per execution
-    function _incrementCycle() internal {
-        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
-        unchecked {
-            ++$.currentCycle;
-        }
-    }
-
     /// @dev Updates a single user's streak and attempts mint with retry logic for failures
-    function _processUser(address user, uint256 cycle) internal {
+    function _processUser(address user) internal {
         VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        uint256 cycle = AbstractDistributionManager(distributionManager).cycleManager().getCurrentCycle();
         UserActivity storage activity = $.userActivity[user];
 
         // Prevent duplicate processing from resetting streak when user appears more than once in same cycle.
