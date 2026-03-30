@@ -54,8 +54,10 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
 
     /// @notice Emitted when NFT mint fails for a user during graceful degradation
     /// @param user User whose mint failed
-    /// @param reason Revert data from the failed external call (UTF-8 bytes of the revert string
-    ///               when available, or raw low-level revert payload)
+    /// @param reason Revert data from the failed external call.
+    ///               In `catch Error(string reason)` branches this is the raw UTF-8 bytes of the
+    ///               revert string (i.e. `bytes(reason)`), and in other cases it is the raw
+    ///               low-level revert payload as returned by the EVM.
     event NFTMintFailed(address indexed user, bytes reason);
 
     // ============ Views (ABI-compatible getters) ============
