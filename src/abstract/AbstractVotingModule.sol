@@ -41,41 +41,87 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @dev keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)") = 0x75bc59ee506a0b0e949fb3a7df4ed9c67afe07055fed85f523f130ba4f0bfaea
     bytes32 public constant VOTE_TYPEHASH = keccak256("Vote(address voter,bytes32 pointsHash,uint256 nonce)");
 
-    // ============ Storage Variables ============
+    // ============ EIP-7201 Namespaced Storage ============
 
-    /// @notice Array of voting power calculation strategies
-    /// @dev Multiple strategies can be used to calculate combined voting power
-    IVotingPowerStrategy[] public votingPowerStrategies;
+    /// @custom:storage-location erc7201:crowdstake.storage.AbstractVotingModule
+    struct AbstractVotingModuleStorage {
+        /// @notice Array of voting power calculation strategies
+        /// @dev Multiple strategies can be used to calculate combined voting power
+        IVotingPowerStrategy[] votingPowerStrategies;
+        /// @notice Tracks used nonces for each voter to prevent replay attacks
+        /// @dev voter => nonce => used
+        mapping(address => mapping(uint256 => bool)) usedNonces;
+        /// @notice Tracks the block number when an account last voted
+        /// @dev voter => block number
+        mapping(address => uint256) accountLastVotedBlock;
+        /// @notice Total voting power used in each cycle
+        /// @dev cycle => total voting power
+        mapping(uint256 => uint256) totalCycleVotingPower;
+        /// @notice Reference to the distribution module for yield allocation
+        /// @dev Handles the actual distribution of rewards based on voting results
+        IDistributionModule distributionModule;
+        /// @notice Reference to the recipient registry for validation
+        /// @dev Maintains the list of valid recipients that can receive votes
+        IRecipientRegistry recipientRegistry;
+        /// @notice Reference to the cycle module for cycle management
+        /// @dev Manages voting cycles and transitions between periods
+        ICycleModule cycleModule;
+    }
 
-    // ============ Mappings ============
+    // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.AbstractVotingModule")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ABSTRACT_VOTING_MODULE_STORAGE =
+        0x80af4feaa640a1d15105fb4b22fd2349e615c43c355f33de80a45defe9253b00;
 
-    /// @notice Tracks used nonces for each voter to prevent replay attacks
-    /// @dev voter => nonce => used
-    mapping(address => mapping(uint256 => bool)) public usedNonces;
+    function _getAbstractVotingModuleStorage() internal pure returns (AbstractVotingModuleStorage storage $) {
+        assembly {
+            $.slot := ABSTRACT_VOTING_MODULE_STORAGE
+        }
+    }
 
-    /// @notice Tracks the block number when an account last voted
-    /// @dev voter => block number
-    mapping(address => uint256) public accountLastVotedBlock;
+    // ============ Public Getters ============
 
-    /// @notice Total voting power used in each cycle
-    /// @dev cycle => total voting power
-    mapping(uint256 => uint256) public totalCycleVotingPower;
+    /// @notice Returns the voting power strategy at the given index
+    /// @param index The index in the strategies array
+    function votingPowerStrategies(uint256 index) public view returns (IVotingPowerStrategy) {
+        return _getAbstractVotingModuleStorage().votingPowerStrategies[index];
+    }
 
-    // ============ External References ============
+    /// @notice Returns whether a nonce has been used by a voter
+    /// @param voter The voter address
+    /// @param nonce The nonce to check
+    function usedNonces(address voter, uint256 nonce) public view returns (bool) {
+        return _getAbstractVotingModuleStorage().usedNonces[voter][nonce];
+    }
 
-    /// @notice Reference to the distribution module for yield allocation
+    /// @notice Returns the block number when the account last voted
+    /// @param voter The voter address
+    function accountLastVotedBlock(address voter) public view returns (uint256) {
+        return _getAbstractVotingModuleStorage().accountLastVotedBlock[voter];
+    }
+
+    /// @notice Returns the total voting power used in a given cycle
+    /// @param cycle The cycle number
+    function totalCycleVotingPower(uint256 cycle) public view returns (uint256) {
+        return _getAbstractVotingModuleStorage().totalCycleVotingPower[cycle];
+    }
+
+    /// @notice Returns the distribution module reference
     /// @dev Handles the actual distribution of rewards based on voting results
-    IDistributionModule public distributionModule;
+    function distributionModule() public view returns (IDistributionModule) {
+        return _getAbstractVotingModuleStorage().distributionModule;
+    }
 
-    /// @notice Reference to the recipient registry for validation
+    /// @notice Returns the recipient registry reference
     /// @dev Maintains the list of valid recipients that can receive votes
-    IRecipientRegistry public recipientRegistry;
+    function recipientRegistry() public view returns (IRecipientRegistry) {
+        return _getAbstractVotingModuleStorage().recipientRegistry;
+    }
 
-    /// @notice Reference to the cycle module for cycle management
+    /// @notice Returns the cycle module reference
     /// @dev Manages voting cycles and transitions between periods
-    ICycleModule public cycleModule;
-
-    // Events and Errors are inherited from IVotingModule
+    function cycleModule() public view returns (ICycleModule) {
+        return _getAbstractVotingModuleStorage().cycleModule;
+    }
 
     // ============ Initialization ============
 
@@ -98,13 +144,18 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         __EIP712_init(EIP712_NAME, EIP712_VERSION);
         __Ownable_init(msg.sender);
 
-        distributionModule = IDistributionModule(_distributionModule);
-        recipientRegistry = IRecipientRegistry(_recipientRegistry);
-        cycleModule = ICycleModule(_cycleModule);
+        if (_distributionModule == address(0)) revert ZeroAddress();
+        if (_recipientRegistry == address(0)) revert ZeroAddress();
+        if (_cycleModule == address(0)) revert ZeroAddress();
+
+        AbstractVotingModuleStorage storage $ = _getAbstractVotingModuleStorage();
+        $.distributionModule = IDistributionModule(_distributionModule);
+        $.recipientRegistry = IRecipientRegistry(_recipientRegistry);
+        $.cycleModule = ICycleModule(_cycleModule);
 
         for (uint256 i = 0; i < _strategies.length; i++) {
             if (address(_strategies[i]) == address(0)) revert InvalidStrategy();
-            votingPowerStrategies.push(_strategies[i]);
+            $.votingPowerStrategies.push(_strategies[i]);
         }
 
         emit VotingModuleInitialized(_strategies);
@@ -136,22 +187,23 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param nonce The nonce to check
     /// @return True if the nonce has been used, false otherwise
     function isNonceUsed(address voter, uint256 nonce) public view virtual returns (bool) {
-        return usedNonces[voter][nonce];
+        return _getAbstractVotingModuleStorage().usedNonces[voter][nonce];
     }
 
     /// @notice Gets all configured voting power strategies
     /// @dev Returns the array of strategy contracts
     /// @return Array of voting power strategy contracts
     function getVotingPowerStrategies() external view virtual returns (IVotingPowerStrategy[] memory) {
-        return votingPowerStrategies;
+        return _getAbstractVotingModuleStorage().votingPowerStrategies;
     }
 
     /// @notice Gets the expected number of vote points based on active recipients
     /// @dev Used to validate vote arrays have correct length
     /// @return The number of active recipients
     function getExpectedPointsLength() external view returns (uint256) {
-        if (address(recipientRegistry) == address(0)) revert RecipientRegistryNotSet();
-        return recipientRegistry.getRecipientCount();
+        AbstractVotingModuleStorage storage $ = _getAbstractVotingModuleStorage();
+        if (address($.recipientRegistry) == address(0)) revert RecipientRegistryNotSet();
+        return $.recipientRegistry.getRecipientCount();
     }
 
     // ============ Getter Functions ============
@@ -184,10 +236,9 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param voter The address to check
     /// @return True if the voter has voted in the current cycle
     function hasVotedInCurrentCycle(address voter) public view returns (bool) {
-        // Get the last cycle start block from the cycle module
-        uint256 cycleStartBlock = cycleModule.lastCycleStartBlock();
-        // Voter has voted in current cycle if their last vote was at or after the cycle start
-        return accountLastVotedBlock[voter] >= cycleStartBlock;
+        AbstractVotingModuleStorage storage $ = _getAbstractVotingModuleStorage();
+        uint256 cycleStartBlock = $.cycleModule.lastCycleStartBlock();
+        return $.accountLastVotedBlock[voter] >= cycleStartBlock;
     }
 
     /// @notice Gets the total voting power used in a specific cycle
@@ -195,7 +246,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param cycle The cycle number to check
     /// @return The total voting power used in that cycle
     function getTotalCycleVotingPower(uint256 cycle) external view returns (uint256) {
-        return totalCycleVotingPower[cycle];
+        return _getAbstractVotingModuleStorage().totalCycleVotingPower[cycle];
     }
 
     // ============ Internal Functions ============
@@ -209,6 +260,8 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     function _castSingleVote(address voter, uint256[] calldata points, uint256 nonce, bytes calldata signature)
         internal
     {
+        AbstractVotingModuleStorage storage $ = _getAbstractVotingModuleStorage();
+
         // Check nonce hasn't been used
         if (isNonceUsed(voter, nonce)) revert NonceAlreadyUsed();
 
@@ -219,7 +272,7 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         if (!validateSignature(voter, points, nonce, signature)) revert InvalidSignature();
 
         // Mark nonce as used after validation
-        usedNonces[voter][nonce] = true;
+        $.usedNonces[voter][nonce] = true;
 
         // Get voting power from the voting strategy
         uint256 votingPower = _calculateTotalVotingPower(voter);
@@ -235,11 +288,11 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param account Address to get voting power for
     /// @return totalPower Total voting power from all strategies
     function _calculateTotalVotingPower(address account) internal view returns (uint256) {
+        AbstractVotingModuleStorage storage $ = _getAbstractVotingModuleStorage();
         uint256 totalPower = 0;
 
-        // Get voting power directly from each voting strategy
-        for (uint256 i = 0; i < votingPowerStrategies.length; i++) {
-            totalPower += votingPowerStrategies[i].getCurrentVotingPower(account);
+        for (uint256 i = 0; i < $.votingPowerStrategies.length; i++) {
+            totalPower += $.votingPowerStrategies[i].getCurrentVotingPower(account);
         }
 
         return totalPower;
@@ -251,15 +304,12 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
     /// @param points Array of points allocated to each recipient
     /// @param votingPower Total voting power of the voter
     function _processVote(address voter, uint256[] calldata points, uint256 votingPower) internal virtual;
-    // Note: This is now an abstract function that must be implemented by concrete modules
 
     /// @notice Validates vote points distribution
     /// @dev Checks if points array is valid according to module rules
     /// @param points Array of points to validate
     /// @return True if points are valid, false otherwise
     function _validateVotePoints(uint256[] calldata points) internal view virtual returns (bool);
-
-    // Note: This is now an abstract function that must be implemented by concrete modules
 
     /// @notice Validates a vote signature
     /// @dev Verifies that a signature is valid for the given vote parameters
@@ -296,9 +346,4 @@ abstract contract AbstractVotingModule is IVotingModule, Initializable, EIP712Up
         address signer = hash.recover(signature);
         return signer == voter;
     }
-
-    // ============ Gap for Upgradeable Contracts ============
-
-    /// @dev Gap for future storage variables in upgradeable contracts
-    uint256[42] private __gap;
 }
