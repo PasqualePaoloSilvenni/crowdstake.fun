@@ -63,7 +63,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     // ============ Views (ABI-compatible getters) ============
 
     function currentCycle() external view returns (uint256) {
-        return AbstractDistributionManager(distributionManager).cycleManager().getCurrentCycle();
+        return AbstractDistributionManager(distributionManager()).cycleManager().getCurrentCycle();
     }
 
     function nftContract() external view returns (IBreadkitNFT) {
@@ -131,7 +131,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @dev Compatibility path for IDistributionStrategy callers.
     ///      Uses recipientRegistry recipients as the user set for the cycle.
     function distribute(uint256) external override onlyDistributionManager {
-        address[] memory users = recipientRegistry.getRecipients();
+        address[] memory users = recipientRegistry().getRecipients();
         if (users.length == 0) revert NoRecipients();
 
         uint256 length = users.length;
@@ -149,7 +149,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @dev Updates a single user's streak and attempts mint with retry logic for failures
     function _processUser(address user) internal {
         VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
-        uint256 cycle = AbstractDistributionManager(distributionManager).cycleManager().getCurrentCycle();
+        uint256 cycle = AbstractDistributionManager(distributionManager()).cycleManager().getCurrentCycle();
         UserActivity storage activity = $.userActivity[user];
 
         // Prevent duplicate processing from resetting streak when user appears more than once in same cycle.
