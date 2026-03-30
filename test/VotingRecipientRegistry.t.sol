@@ -46,12 +46,19 @@ contract VotingRecipientRegistryTest is TestWrapper {
         vm.prank(RECIPIENT_1);
         uint256 proposalId = registry.proposeAddition(NEW_RECIPIENT);
 
-        (address candidate, bool isAddition, uint256 voteCount, bool executed, uint256 createdAt) =
-            registry.getProposal(proposalId);
+        (
+            address candidate,
+            bool isAddition,
+            uint256 voteCount,
+            uint256 requiredVotes,
+            bool executed,
+            uint256 createdAt
+        ) = registry.getProposal(proposalId);
 
         assertEq(candidate, NEW_RECIPIENT);
         assertTrue(isAddition);
         assertEq(voteCount, 1); // Proposer auto-votes
+        assertEq(requiredVotes, 3); // Snapshotted at creation: 3 recipients for addition
         assertFalse(executed);
         assertEq(createdAt, block.timestamp);
 
@@ -67,7 +74,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
         emit VoteCast(proposalId, RECIPIENT_2);
         registry.vote(proposalId);
 
-        (,, uint256 voteCount,,) = registry.getProposal(proposalId);
+        (,, uint256 voteCount,,,) = registry.getProposal(proposalId);
         assertEq(voteCount, 2);
         assertTrue(registry.hasVoted(proposalId, RECIPIENT_2));
     }
@@ -86,7 +93,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
         registry.vote(proposalId);
 
         // Verify proposal is executed but recipient not yet added (still in queue)
-        (,,, bool executed,) = registry.getProposal(proposalId);
+        (,,,, bool executed,) = registry.getProposal(proposalId);
         assertTrue(executed);
         assertFalse(registry.isRecipient(NEW_RECIPIENT)); // Not yet processed
         assertTrue(registry.isQueuedForAddition(NEW_RECIPIENT)); // Still in queue
@@ -130,7 +137,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
         registry.vote(proposalId);
 
         // Verify the proposal was executed but recipient not yet added
-        (,,, bool executed,) = registry.getProposal(proposalId);
+        (,,,, bool executed,) = registry.getProposal(proposalId);
         assertTrue(executed);
         assertFalse(registry.isRecipient(address(0x99))); // Not yet processed
         assertTrue(registry.isQueuedForAddition(address(0x99))); // Still in queue
@@ -144,11 +151,13 @@ contract VotingRecipientRegistryTest is TestWrapper {
         vm.prank(RECIPIENT_1);
         uint256 proposalId = registry.proposeRemoval(RECIPIENT_3);
 
-        (address candidate, bool isAddition, uint256 voteCount,,) = registry.getProposal(proposalId);
+        (address candidate, bool isAddition, uint256 voteCount, uint256 requiredVotes,,) =
+            registry.getProposal(proposalId);
 
         assertEq(candidate, RECIPIENT_3);
         assertFalse(isAddition);
         assertEq(voteCount, 1);
+        assertEq(requiredVotes, 2); // Snapshotted at creation: 3 - 1 for removal
     }
 
     function test_RemovalRequiresFewerVotes() public {
@@ -156,14 +165,13 @@ contract VotingRecipientRegistryTest is TestWrapper {
         uint256 proposalId = registry.proposeRemoval(RECIPIENT_3);
 
         // Only need 2 votes (all except the one being removed)
-        // TODO: Commented out pending resolution of issue #43
-        // assertEq(registry.getRequiredVotes(proposalId), 2);
+        assertEq(registry.getRequiredVotes(proposalId), 2);
 
         vm.prank(RECIPIENT_2);
         registry.vote(proposalId);
 
         // Should auto-execute proposal with 2 votes (but not process queue)
-        (,,, bool executed,) = registry.getProposal(proposalId);
+        (,,,, bool executed,) = registry.getProposal(proposalId);
         assertTrue(executed);
 
         // Verify recipient is still active (not yet processed)
@@ -210,7 +218,7 @@ contract VotingRecipientRegistryTest is TestWrapper {
         uint256 proposalId = registry.proposeAddition(NEW_RECIPIENT);
 
         vm.prank(NON_RECIPIENT);
-        vm.expectRevert(VotingRecipientRegistry.NotARecipient.selector);
+        vm.expectRevert(VotingRecipientRegistry.NotEligibleVoter.selector);
         registry.vote(proposalId);
     }
 
@@ -288,11 +296,10 @@ contract VotingRecipientRegistryTest is TestWrapper {
 
         // New recipient can now propose
         vm.prank(NEW_RECIPIENT);
-        registry.proposeAddition(address(0x99));
+        uint256 newProposalId = registry.proposeAddition(address(0x99));
 
         // Now need 4 votes (including new recipient)
-        // TODO: Commented out pending resolution of issue #43
-        // assertEq(registry.getRequiredVotes(newProposalId), 4);
+        assertEq(registry.getRequiredVotes(newProposalId), 4);
     }
 
     function test_RevertOnEmptyInitialRecipients() public {
@@ -338,5 +345,40 @@ contract VotingRecipientRegistryTest is TestWrapper {
         vm.prank(RECIPIENT_1);
         vm.expectRevert();
         registry.setProposalExpiry(3 days);
+    }
+
+    function test_RequiredVotesUnchangedAfterRecipientSetChanges() public {
+        // Create an addition proposal while there are 3 recipients (requires 3 votes)
+        vm.prank(RECIPIENT_1);
+        uint256 proposalId = registry.proposeAddition(NEW_RECIPIENT);
+        assertEq(registry.getRequiredVotes(proposalId), 3);
+
+        // Add a 4th recipient via a separate proposal
+        vm.prank(RECIPIENT_1);
+        uint256 addProposal = registry.proposeAddition(address(0x55));
+        vm.prank(RECIPIENT_2);
+        registry.vote(addProposal);
+        vm.prank(RECIPIENT_3);
+        registry.vote(addProposal);
+        registry.processQueue();
+        assertEq(registry.getRecipientCount(), 4);
+
+        // Original proposal still requires only 3 votes (snapshotted at creation)
+        assertEq(registry.getRequiredVotes(proposalId), 3);
+
+        // New recipient is NOT eligible to vote on the pre-existing proposal
+        assertFalse(registry.isEligibleVoter(proposalId, address(0x55)));
+        vm.prank(address(0x55));
+        vm.expectRevert(VotingRecipientRegistry.NotEligibleVoter.selector);
+        registry.vote(proposalId);
+
+        // Original recipients can still vote and execute
+        vm.prank(RECIPIENT_2);
+        registry.vote(proposalId);
+        vm.prank(RECIPIENT_3);
+        registry.vote(proposalId);
+
+        (,,,, bool executed,) = registry.getProposal(proposalId);
+        assertTrue(executed);
     }
 }

@@ -19,10 +19,14 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
         uint256 voteCount;
         /// @notice Mapping of addresses to whether they have voted on this proposal
         mapping(address => bool) hasVoted;
+        /// @notice Mapping of addresses eligible to vote, snapshotted at proposal creation
+        mapping(address => bool) isEligibleVoter;
         /// @notice Whether this proposal has been executed (prevents double execution)
         bool executed;
         /// @notice Timestamp when this proposal was created (for expiry calculation)
         uint256 createdAt;
+        /// @notice Number of votes required for this proposal to pass, snapshotted at creation
+        uint256 requiredVotes;
     }
 
     // ============ EIP-7201 Namespaced Storage ============
@@ -122,6 +126,9 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
 
     /// @notice Thrown when attempting to execute a proposal without sufficient votes
     error NotEnoughVotes();
+
+    /// @notice Thrown when a voter was not a recipient at the time the proposal was created
+    error NotEligibleVoter();
 
     /// @notice Thrown when attempting to initialize the registry with an empty recipients array
     error NoRecipients();
@@ -249,6 +256,13 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
         proposal.candidate = candidate;
         proposal.isAddition = isAddition;
         proposal.createdAt = block.timestamp;
+        AbstractRecipientRegistryStorage storage base = _getAbstractRecipientRegistryStorage();
+        proposal.requiredVotes = isAddition ? base.recipients.length : base.recipients.length - 1;
+
+        // Snapshot eligible voters from the current recipient set
+        for (uint256 i = 0; i < base.recipients.length; i++) {
+            proposal.isEligibleVoter[base.recipients[i]] = true;
+        }
 
         // Proposer automatically votes for their proposal
         proposal.hasVoted[msg.sender] = true;
@@ -259,21 +273,19 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
     }
 
     /// @notice Cast a vote on an existing proposal
-    /// @dev Only existing recipients can vote on proposals
+    /// @dev Only recipients who were active at proposal creation can vote (snapshotted eligibility)
     /// @dev Voters cannot vote twice on the same proposal
     /// @dev Voting is not allowed on expired or already executed proposals
     /// @dev Automatically executes the proposal if enough votes are reached
     /// @dev Emits VoteCast event and potentially ProposalExecuted if threshold reached
     /// @param proposalId The ID of the proposal to vote on
     function vote(uint256 proposalId) external {
-        AbstractRecipientRegistryStorage storage base = _getAbstractRecipientRegistryStorage();
-        if (!base.isRecipientMapping[msg.sender]) revert NotARecipient();
-
         VotingRecipientRegistryStorage storage $ = _getVotingRecipientRegistryStorage();
         Proposal storage proposal = $.proposals[proposalId];
         if (proposal.candidate == address(0)) revert ProposalNotFound();
         if (proposal.executed) revert ProposalAlreadyExecuted();
         if (block.timestamp > proposal.createdAt + $.proposalExpiry) revert ProposalExpired();
+        if (!proposal.isEligibleVoter[msg.sender]) revert NotEligibleVoter();
         if (proposal.hasVoted[msg.sender]) revert AlreadyVoted();
 
         proposal.hasVoted[msg.sender] = true;
@@ -282,8 +294,7 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
         emit VoteCast(proposalId, msg.sender);
 
         // Check if we have enough votes to execute automatically
-        uint256 requiredVotes = proposal.isAddition ? base.recipients.length : base.recipients.length - 1;
-        if (proposal.voteCount == requiredVotes) {
+        if (proposal.voteCount == proposal.requiredVotes) {
             _executeProposal(proposalId);
         }
     }
@@ -291,20 +302,17 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
     /// @notice Manually execute a proposal that has received sufficient votes
     /// @dev Anyone can call this function if the proposal has enough votes
     /// @dev Proposals cannot be executed if they are expired or already executed
-    /// @dev Addition proposals require votes from all current recipients
-    /// @dev Removal proposals require votes from all recipients except the one being removed
+    /// @dev Vote threshold is snapshotted at proposal creation and does not change
     /// @param proposalId The ID of the proposal to execute
     function executeProposal(uint256 proposalId) external {
         VotingRecipientRegistryStorage storage $ = _getVotingRecipientRegistryStorage();
-        AbstractRecipientRegistryStorage storage base = _getAbstractRecipientRegistryStorage();
         Proposal storage proposal = $.proposals[proposalId];
         if (proposal.candidate == address(0)) revert ProposalNotFound();
         if (proposal.executed) revert ProposalAlreadyExecuted();
         if (block.timestamp > proposal.createdAt + $.proposalExpiry) revert ProposalExpired();
 
-        uint256 requiredVotes = proposal.isAddition ? base.recipients.length : base.recipients.length - 1;
-
-        if (proposal.voteCount < requiredVotes) revert NotEnoughVotes();
+        if (proposal.requiredVotes == 0) revert NotEnoughVotes();
+        if (proposal.voteCount < proposal.requiredVotes) revert NotEnoughVotes();
 
         _executeProposal(proposalId);
     }
@@ -335,15 +343,31 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
     /// @return candidate The address being proposed for addition or removal
     /// @return isAddition Whether this is an addition (true) or removal (false) proposal
     /// @return voteCount Current number of votes the proposal has received
+    /// @return requiredVotes Number of votes needed for the proposal to pass (snapshotted at creation)
     /// @return executed Whether the proposal has been executed successfully
     /// @return createdAt Timestamp when the proposal was created (for expiry calculation)
     function getProposal(uint256 proposalId)
         external
         view
-        returns (address candidate, bool isAddition, uint256 voteCount, bool executed, uint256 createdAt)
+        returns (
+            address candidate,
+            bool isAddition,
+            uint256 voteCount,
+            uint256 requiredVotes,
+            bool executed,
+            uint256 createdAt
+        )
     {
         Proposal storage proposal = _getVotingRecipientRegistryStorage().proposals[proposalId];
-        return (proposal.candidate, proposal.isAddition, proposal.voteCount, proposal.executed, proposal.createdAt);
+        if (proposal.candidate == address(0)) revert ProposalNotFound();
+        return (
+            proposal.candidate,
+            proposal.isAddition,
+            proposal.voteCount,
+            proposal.requiredVotes,
+            proposal.executed,
+            proposal.createdAt
+        );
     }
 
     /// @notice Check if a specific address has voted on a proposal
@@ -354,6 +378,15 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
     /// @return hasVoted_ True if the address has voted on this proposal, false otherwise
     function hasVoted(uint256 proposalId, address voter) external view returns (bool hasVoted_) {
         return _getVotingRecipientRegistryStorage().proposals[proposalId].hasVoted[voter];
+    }
+
+    /// @notice Check if an address was eligible to vote on a proposal
+    /// @dev Eligibility is snapshotted at proposal creation from the recipient set at that time
+    /// @param proposalId The ID of the proposal to check
+    /// @param voter The address to check eligibility for
+    /// @return isEligible True if the address was a recipient when the proposal was created
+    function isEligibleVoter(uint256 proposalId, address voter) external view returns (bool isEligible) {
+        return _getVotingRecipientRegistryStorage().proposals[proposalId].isEligibleVoter[voter];
     }
 
     /// @notice Check if a proposal has expired and can no longer be voted on
@@ -367,21 +400,14 @@ contract VotingRecipientRegistry is AbstractRecipientRegistry {
         return block.timestamp > proposal.createdAt + $.proposalExpiry;
     }
 
-    // TODO: Temporarily commented out pending resolution of issue #43
-    // See: https://github.com/BreadchainCoop/breadkit/issues/43
+    /// @notice Get the number of votes required for a proposal to pass
+    /// @dev Returns the snapshotted value from proposal creation time
+    /// @param proposalId The ID of the proposal to check requirements for
+    /// @return requiredVotes Number of votes needed for the proposal to be executable
+    function getRequiredVotes(uint256 proposalId) external view returns (uint256 requiredVotes) {
+        Proposal storage proposal = _getVotingRecipientRegistryStorage().proposals[proposalId];
+        if (proposal.candidate == address(0)) revert ProposalNotFound();
 
-    // /// @notice Calculate the number of votes required for a proposal to pass
-    // /// @dev Addition proposals require all current recipients to vote (100% consensus)
-    // /// @dev Removal proposals require all recipients except the one being removed
-    // /// @dev This number can change if recipients are added/removed while proposal is active
-    // /// @param proposalId The ID of the proposal to check requirements for
-    // /// @return requiredVotes Number of votes needed for the proposal to be executable
-    // function getRequiredVotes(uint256 proposalId) external view returns (uint256 requiredVotes) {
-    //     Proposal storage proposal = proposals[proposalId];
-    //     if (proposal.candidate == address(0)) revert ProposalNotFound();
-
-    //     // Addition proposals need unanimous consent from all current recipients
-    //     // Removal proposals need consent from all recipients except the one being removed
-    //     return proposal.isAddition ? recipients.length : recipients.length - 1;
-    // }
+        return proposal.requiredVotes;
+    }
 }
