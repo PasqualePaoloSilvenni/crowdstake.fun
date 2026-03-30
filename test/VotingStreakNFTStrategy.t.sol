@@ -119,6 +119,21 @@ contract VotingStreakNFTStrategyTest is Test {
         assertEq(mintPending2, true);
         assertEq(mockNft.balanceOf(user1), 0);
         assertEq(mockNft.balanceOf(user2), 0);
+
+        // Act: 11th vote - retry should succeed for both users
+        mockNft.setShouldFail(false);
+        strategy.executeStrategy(users);
+
+        // Assert: Both users should have successful mints after retry
+        (uint256 streak1Retry, , bool mintPending1Retry) = strategy.userActivity(user1);
+        (uint256 streak2Retry, , bool mintPending2Retry) = strategy.userActivity(user2);
+
+        assertEq(streak1Retry, 11);
+        assertEq(streak2Retry, 11);
+        assertEq(mintPending1Retry, false); // Successfully minted after retry, flag cleared
+        assertEq(mintPending2Retry, false);
+        assertEq(mockNft.balanceOf(user1), 1); // NFT minted after retry
+        assertEq(mockNft.balanceOf(user2), 1);
     }
 
     function test_MintRetrySucceedsOnNextCycle() public {
