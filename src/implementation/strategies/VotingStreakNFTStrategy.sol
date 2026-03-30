@@ -15,9 +15,11 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
     /// @notice User voting activity state for streak tracking
     /// @param streak Current consecutive voting streak
     /// @param lastVoteCycle Last cycle in which the user was processed
+    /// @param mintPending Track if mint is still pending for current streak
     struct UserActivity {
         uint256 streak;
         uint256 lastVoteCycle;
+        bool mintPending;
     }
 
     /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTStrategy
@@ -70,10 +72,10 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
         return _getVotingStreakNFTStrategyStorage().nftContract;
     }
 
-    function userActivity(address user) external view returns (uint256 streak, uint256 lastVoteCycle) {
+    function userActivity(address user) external view returns (uint256 streak, uint256 lastVoteCycle, bool mintPending) {
         VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
         UserActivity storage activity = $.userActivity[user];
-        return (activity.streak, activity.lastVoteCycle);
+        return (activity.streak, activity.lastVoteCycle, activity.mintPending);
     }
 
     // ============ Initializer ============
@@ -162,7 +164,7 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
         }
     }
 
-    /// @dev Updates a single user's streak and attempts mint on exact streak == 10
+    /// @dev Updates a single user's streak and attempts mint with retry logic for failures
     function _processUser(address user, uint256 cycle) internal {
         VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
         UserActivity storage activity = $.userActivity[user];
@@ -176,19 +178,37 @@ contract VotingStreakNFTStrategy is AbstractDistributionStrategy {
             }
         } else {
             activity.streak = 1;
+            activity.mintPending = false;  // Reset when streak breaks
         }
 
         activity.lastVoteCycle = cycle;
 
-        // Reward only at exact 10-streak milestone per requirement.
-        if (activity.streak == 10) {
-            try $.nftContract.mint(user) {
-                // no-op
-            } catch Error(string memory reason) {
-                emit NFTMintFailed(user, bytes(reason));
-            } catch (bytes memory lowLevelData) {
-                emit NFTMintFailed(user, lowLevelData);
+        // Attempt mint at streak == 10 if haven't minted yet for this streak
+        if (activity.streak == 10 && !activity.mintPending) {
+            activity.mintPending = true;  // Mark attempt begun
+            if (_attemptMint(user)) {
+                activity.mintPending = false;  // Successfully minted, no retry needed
             }
+            // If mint fails, mintPending stays true for retry in next cycle
+        } else if (activity.mintPending && activity.streak > 10) {
+            // Retry minting in subsequent cycles while streak continues
+            if (_attemptMint(user)) {
+                activity.mintPending = false;  // Successfully minted
+            }
+        }
+    }
+
+    /// @dev Helper to attempt NFT mint and return success status
+    function _attemptMint(address user) internal returns (bool success) {
+        VotingStreakNFTStrategyStorage storage $ = _getVotingStreakNFTStrategyStorage();
+        try $.nftContract.mint(user) {
+            return true;
+        } catch Error(string memory reason) {
+            emit NFTMintFailed(user, bytes(reason));
+            return false;
+        } catch (bytes memory lowLevelData) {
+            emit NFTMintFailed(user, lowLevelData);
+            return false;
         }
     }
 }
