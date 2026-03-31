@@ -11,7 +11,4 @@ interface ICrowdstakeNFT is IERC721 {
     /// @return tokenId The unique ID of the newly minted NFT.
     function mint(address to) external returns (uint256);
 
-    /// @notice Burns a specific NFT.
-    /// @param tokenId The ID of the NFT to burn.
-    function burn(uint256 tokenId) external;
 }

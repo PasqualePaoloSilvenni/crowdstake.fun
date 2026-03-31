@@ -25,7 +25,4 @@ contract MockCrowdstakeNFT is ERC721, ICrowdstakeNFT {
         _safeMint(to, tokenId);
     }
 
-    function burn(uint256 tokenId) external override {
-        _burn(tokenId);
-    }
 }
