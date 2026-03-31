@@ -1,0 +1,245 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {BasisPointsVotingModule} from "../base/BasisPointsVotingModule.sol";
+import {AbstractVotingModule} from "../abstract/AbstractVotingModule.sol";
+import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
+import {IBreadkitNFT} from "../interfaces/IBreadkitNFT.sol";
+
+/// @title VotingStreakNFTModule
+/// @notice Extends BasisPointsVotingModule with voting streak tracking and NFT rewards on voting activity
+/// @dev Tracks consecutive voting activity per voter and mints a Breadkit NFT upon reaching a 10-vote streak.
+///      Uses the Decorator/Inheritance pattern to augment voting module behavior without modifying core protocol files.
+///      This correctly models voting streaks as voter-based activity rather than distribution-based.
+/// @custom:security-contact security@breadchain.xyz
+contract VotingStreakNFTModule is BasisPointsVotingModule {
+    // ============ EIP-7201 Namespaced Storage ============
+
+    /// @notice User voting activity state for streak tracking
+    /// @param streak Current consecutive voting streak count
+    /// @param lastVoteCycle Last cycle in which the user successfully voted
+    /// @param mintPending Flag indicating whether an NFT mint is pending retry for the current streak
+    struct UserActivity {
+        uint256 streak;
+        uint256 lastVoteCycle;
+        bool mintPending;
+    }
+
+    /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTModule
+    struct VotingStreakNFTModuleStorage {
+        /// @notice Breadkit NFT contract used for streak rewards
+        IBreadkitNFT nftContract;
+        /// @notice Per-user streak tracking and state
+        mapping(address => UserActivity) userActivity;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.VotingStreakNFTModule")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant VOTING_STREAK_NFT_MODULE_STORAGE =
+        0xa65dee7b045e43a11600ba41b419f3aad18025b3c1b3b7c19daa6c12d6462c00;
+
+    function _getVotingStreakNFTModuleStorage()
+        internal
+        pure
+        returns (VotingStreakNFTModuleStorage storage $)
+    {
+        assembly {
+            $.slot := VOTING_STREAK_NFT_MODULE_STORAGE
+        }
+    }
+
+    // ============ Events ============
+
+    /// @notice Emitted when the NFT contract is updated
+    /// @param oldAddress Previous NFT contract address
+    /// @param newAddress New NFT contract address
+    event NFTContractUpdated(address indexed oldAddress, address indexed newAddress);
+
+    /// @notice Emitted when NFT mint fails for a user during graceful degradation
+    /// @param user User whose mint failed
+    /// @param reason Revert data from the failed external call.
+    ///               In `catch Error(string reason)` branches this is the raw UTF-8 bytes of the
+    ///               revert string (i.e. `bytes(reason)`), and in other cases it is the raw
+    ///               low-level revert payload as returned by the EVM.
+    event NFTMintFailed(address indexed user, bytes reason);
+
+    /// @notice Emitted when a user's voting streak is updated
+    /// @param user User whose streak was updated
+    /// @param newStreak The new streak count after this vote
+    /// @param cycle The cycle in which the vote occurred
+    event StreakUpdated(address indexed user, uint256 newStreak, uint256 cycle);
+
+    // ============ Views (ABI-compatible getters) ============
+
+    /// @notice Gets the NFT contract address
+    /// @return The IBreadkitNFT interface instance
+    function nftContract() external view returns (IBreadkitNFT) {
+        return _getVotingStreakNFTModuleStorage().nftContract;
+    }
+
+    /// @notice Gets a user's voting activity status
+    /// @param user The user address to query
+    /// @return streak Current consecutive voting streak
+    /// @return lastVoteCycle Last cycle in which the user successfully voted
+    /// @return mintPending Whether an NFT mint is pending for the current streak
+    function userActivity(address user)
+        external
+        view
+        returns (uint256 streak, uint256 lastVoteCycle, bool mintPending)
+    {
+        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
+        UserActivity storage activity = $.userActivity[user];
+        return (activity.streak, activity.lastVoteCycle, activity.mintPending);
+    }
+
+    // ============ Initialization ============
+
+    /// @notice Initializes the voting streak NFT module
+    /// @dev Sets up the module with voting power strategies, distribution settings, and NFT contract.
+    ///      Can only be called once due to initializer modifier.
+    /// @param _maxPoints Maximum basis points that can be allocated per recipient (e.g., 100 for percentage-based)
+    /// @param _strategies Array of voting power strategy contracts for power calculation
+    /// @param _distributionModule Address of the distribution module for reward allocation
+    /// @param _recipientRegistry Address of the recipient registry for valid recipients
+    /// @param _cycleModule Address of the cycle module for cycle management
+    /// @param _nftContract Breadkit NFT contract address for streak rewards
+    function initialize(
+        uint256 _maxPoints,
+        IVotingPowerStrategy[] calldata _strategies,
+        address _distributionModule,
+        address _recipientRegistry,
+        address _cycleModule,
+        address _nftContract
+    ) external initializer {
+        if (_nftContract == address(0)) revert ZeroAddress();
+
+        // Initialize parent classes through internal init functions
+        __AbstractVotingModule_init(_strategies, _distributionModule, _recipientRegistry, _cycleModule);
+
+        // Set up BasisPointsVotingModule storage
+        BasisPointsVotingModuleStorage storage basisPoints = _getBasisPointsVotingModuleStorage();
+        basisPoints.maxPoints = _maxPoints;
+
+        // Set up NFT contract for this module
+        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
+        $.nftContract = IBreadkitNFT(_nftContract);
+        emit NFTContractUpdated(address(0), _nftContract);
+    }
+
+    // ============ Admin Functions ============
+
+    /// @notice Updates the Breadkit NFT contract address
+    /// @dev Only callable by owner. Allows migration to a different NFT contract if needed.
+    /// @param _nftContract New NFT contract address
+    function setNFTContract(address _nftContract) external onlyOwner {
+        if (_nftContract == address(0)) revert ZeroAddress();
+
+        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
+        address oldAddress = address($.nftContract);
+        $.nftContract = IBreadkitNFT(_nftContract);
+
+        emit NFTContractUpdated(oldAddress, _nftContract);
+    }
+
+    // ============ Internal Overrides ============
+
+    /// @notice Overrides _processVote to include voting streak tracking after standard voting logic
+    /// @dev Execution flow:
+    ///      1. Calls parent _processVote to execute standard BasisPoints voting math
+    ///      2. Fetches current cycle from cycle module
+    ///      3. Updates voting streak for the voter
+    /// @param voter Address of the voter
+    /// @param points Array of basis points for allocation across recipients
+    /// @param votingPower Total voting power of the voter
+    function _processVote(address voter, uint256[] calldata points, uint256 votingPower)
+        internal
+        override
+    {
+        // Step 1: Execute standard voting math via parent
+        super._processVote(voter, points, votingPower);
+
+        // Step 2: Fetch current cycle
+        uint256 currentCycle = cycleModule().getCurrentCycle();
+
+        // Step 3: Update voting streak
+        _updateVotingStreak(voter, currentCycle);
+    }
+
+    // ============ Internal Streak Logic ============
+
+    /// @dev Updates a user's voting streak and manages the mint retry state machine
+    /// @param user The user whose streak should be updated
+    /// @param currentCycle The current cycle number
+    function _updateVotingStreak(address user, uint256 currentCycle) internal {
+        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
+        UserActivity storage activity = $.userActivity[user];
+
+        // Re-cast Protection:
+        // BasisPointsVotingModule allows users to vote multiple times in the same cycle.
+        // If user already voted in this cycle, do not increment streak again.
+        if (activity.lastVoteCycle == currentCycle) {
+            return;
+        }
+
+        // Streak Continuation Logic:
+        if (activity.lastVoteCycle + 1 == currentCycle) {
+            // Consecutive vote - increment the streak
+            unchecked {
+                ++activity.streak;
+            }
+        } else {
+            // Streak broken (gap of 1 or more cycles) - reset to 1 and clear pending mint
+            activity.streak = 1;
+            activity.mintPending = false;
+        }
+
+        // Record this cycle as the last voted cycle
+        activity.lastVoteCycle = currentCycle;
+
+        emit StreakUpdated(user, activity.streak, currentCycle);
+
+        // Mint & Retry Mechanism:
+        // Condition 1: Streak just reached 10 and no mint is pending
+        if (activity.streak == 10 && !activity.mintPending) {
+            activity.mintPending = true;  // Mark mint attempt as begun
+            if (_attemptMint(user)) {
+                // Mint succeeded - no retry needed
+                activity.mintPending = false;
+            }
+            // If mint failed, mintPending stays true for retry in next cycle when streak > 10
+        }
+        // Condition 2: Mint is pending and streak continues beyond 10
+        else if (activity.mintPending && activity.streak > 10) {
+            // Retry minting in subsequent cycles while streak continues
+            if (_attemptMint(user)) {
+                // Mint succeeded on retry
+                activity.mintPending = false;
+            }
+            // If mint failed again, mintPending stays true for next retry opportunity
+        }
+    }
+
+    /// @dev Attempts to mint an NFT for a user with graceful error handling
+    /// @param user The user address to mint for
+    /// @return success True if mint succeeded, false otherwise
+    function _attemptMint(address user) internal returns (bool success) {
+        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
+
+        // Safety check: ensure NFT contract is configured
+        if (address($.nftContract) == address(0)) {
+            emit NFTMintFailed(user, bytes("NFT contract not set"));
+            return false;
+        }
+
+        try $.nftContract.mint(user) {
+            return true;
+        } catch Error(string memory reason) {
+            // Standard revert with reason string
+            emit NFTMintFailed(user, bytes(reason));
+            return false;
+        } catch (bytes memory lowLevelData) {
+            // Low-level revert or panic
+            emit NFTMintFailed(user, lowLevelData);
+            return false;
+        }
+    }
+}
