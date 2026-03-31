@@ -5,8 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {VotingStreakNFTModule} from "../src/implementation/VotingStreakNFTModule.sol";
 import {BasisPointsVotingModule} from "../src/base/BasisPointsVotingModule.sol";
 import {IVotingPowerStrategy} from "../src/interfaces/IVotingPowerStrategy.sol";
-import {IBreadkitNFT} from "../src/interfaces/IBreadkitNFT.sol";
-import {MockBreadkitNFT} from "./mocks/MockBreadkitNFT.sol";
+import {ICrowdstakeNFT} from "../src/interfaces/ICrowdstakeNFT.sol";
+import {MockCrowdstakeNFT} from "./mocks/MockCrowdstakeNFT.sol";
 import {MockRecipientRegistry} from "./mocks/MockRecipientRegistry.sol";
 import {MockCycleModule} from "./mocks/MockCycleModule.sol";
 
@@ -43,7 +43,7 @@ contract MockVotingPowerStrategy is IVotingPowerStrategy {
 /// @dev Tests voting streak tracking, NFT minting, and graceful degradation
 contract VotingStreakNFTModuleTest is Test {
     VotingStreakBasisPointsModuleHarness public harness;
-    MockBreadkitNFT public mockNft;
+    MockCrowdstakeNFT public mockNft;
     MockRecipientRegistry public recipientRegistry;
     MockCycleModule public cycleModule;
     MockVotingPowerStrategy public votingPowerStrategy;
@@ -73,7 +73,7 @@ contract VotingStreakNFTModuleTest is Test {
         votingPowerStrategy = new MockVotingPowerStrategy();
 
         // Create mock NFT
-        mockNft = new MockBreadkitNFT();
+        mockNft = new MockCrowdstakeNFT();
 
         // Create harness (this is our VotingStreakNFTModule)
         harness = new VotingStreakBasisPointsModuleHarness();
@@ -403,7 +403,7 @@ contract VotingStreakNFTModuleTest is Test {
         harness.setNFTContract(newNftAddress);
 
         // Verify the NFT contract was updated
-        IBreadkitNFT retrievedNft = harness.nftContract();
+        ICrowdstakeNFT retrievedNft = harness.nftContract();
         assertEq(address(retrievedNft), newNftAddress, "NFT contract should be updated by owner");
     }
 

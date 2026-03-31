@@ -4,14 +4,13 @@ pragma solidity ^0.8.20;
 import {BasisPointsVotingModule} from "../base/BasisPointsVotingModule.sol";
 import {AbstractVotingModule} from "../abstract/AbstractVotingModule.sol";
 import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
-import {IBreadkitNFT} from "../interfaces/IBreadkitNFT.sol";
+import {ICrowdstakeNFT} from "../interfaces/ICrowdstakeNFT.sol";
 
 /// @title VotingStreakNFTModule
 /// @notice Extends BasisPointsVotingModule with voting streak tracking and NFT rewards on voting activity
-/// @dev Tracks consecutive voting activity per voter and mints a Breadkit NFT upon reaching a 10-vote streak.
+/// @dev Tracks consecutive voting activity per voter and mints a Crowdstake NFT upon reaching a 10-vote streak.
 ///      Uses the Decorator/Inheritance pattern to augment voting module behavior without modifying core protocol files.
 ///      This correctly models voting streaks as voter-based activity rather than distribution-based.
-/// @custom:security-contact security@breadchain.xyz
 contract VotingStreakNFTModule is BasisPointsVotingModule {
     // ============ EIP-7201 Namespaced Storage ============
 
@@ -27,8 +26,8 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
     /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTModule
     struct VotingStreakNFTModuleStorage {
-        /// @notice Breadkit NFT contract used for streak rewards
-        IBreadkitNFT nftContract;
+        /// @notice Crowdstake NFT contract used for streak rewards
+        ICrowdstakeNFT nftContract;
         /// @notice Per-user streak tracking and state
         mapping(address => UserActivity) userActivity;
     }
@@ -71,8 +70,8 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     // ============ Views (ABI-compatible getters) ============
 
     /// @notice Gets the NFT contract address
-    /// @return The IBreadkitNFT interface instance
-    function nftContract() external view returns (IBreadkitNFT) {
+    /// @return The ICrowdstakeNFT interface instance
+    function nftContract() external view returns (ICrowdstakeNFT) {
         return _getVotingStreakNFTModuleStorage().nftContract;
     }
 
@@ -101,7 +100,7 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     /// @param _distributionModule Address of the distribution module for reward allocation
     /// @param _recipientRegistry Address of the recipient registry for valid recipients
     /// @param _cycleModule Address of the cycle module for cycle management
-    /// @param _nftContract Breadkit NFT contract address for streak rewards
+    /// @param _nftContract Crowdstake NFT contract address for streak rewards
     function initialize(
         uint256 _maxPoints,
         IVotingPowerStrategy[] calldata _strategies,
@@ -121,13 +120,13 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
         // Set up NFT contract for this module
         VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
-        $.nftContract = IBreadkitNFT(_nftContract);
+        $.nftContract = ICrowdstakeNFT(_nftContract);
         emit NFTContractUpdated(address(0), _nftContract);
     }
 
     // ============ Admin Functions ============
 
-    /// @notice Updates the Breadkit NFT contract address
+    /// @notice Updates the NFT contract address
     /// @dev Only callable by owner. Allows migration to a different NFT contract if needed.
     /// @param _nftContract New NFT contract address
     function setNFTContract(address _nftContract) external onlyOwner {
@@ -135,7 +134,7 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
         VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
         address oldAddress = address($.nftContract);
-        $.nftContract = IBreadkitNFT(_nftContract);
+        $.nftContract = ICrowdstakeNFT(_nftContract);
 
         emit NFTContractUpdated(oldAddress, _nftContract);
     }
