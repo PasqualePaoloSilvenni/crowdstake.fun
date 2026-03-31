@@ -480,23 +480,4 @@ contract VotingStreakNFTModuleTest is Test {
         assertEq(finalStreak2, 1, "user2 should have streak of 1");
     }
 
-    /// @notice Test: Streak and NFT minting with zero address NFT contract
-    /// @dev Verifies graceful handling when NFT contract is not set
-    function test_GracefulHandlingWithoutNFTContract() public {
-        // Note: This test assumes NFT contract can be set to address(0) after initialization
-        // Arrange
-        uint256[] memory points = new uint256[](2);
-        points[0] = 50;
-        points[1] = 50;
-
-        // Bring user to 9 votes
-        for (uint256 i = 0; i < 9; i++) {
-            harness.exposed_processVote(user, points, VOTING_POWER);
-            if (i < 8) cycleModule.advanceCycle();
-        }
-
-        // We can't directly test this without being able to set NFT contract to address(0)
-        // which violates the zero address check in setNFTContract
-        // This test is documented for future consideration if that functionality is added
-    }
 }

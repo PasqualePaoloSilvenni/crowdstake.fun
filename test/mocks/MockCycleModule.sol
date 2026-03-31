@@ -9,7 +9,7 @@ import {ICycleModule} from "../../src/interfaces/ICycleModule.sol";
 contract MockCycleModule is ICycleModule {
     uint256 private _currentCycle = 1;
 
-    function getCurrentCycle() external view returns (uint256) {
+    function getCurrentCycle() external view override returns (uint256) {
         return _currentCycle;
     }
 
@@ -17,27 +17,27 @@ contract MockCycleModule is ICycleModule {
         _currentCycle++;
     }
 
-    function isCycleComplete() external view returns (bool) {
+    function isCycleComplete() external view override returns (bool) {
         return true;
     }
 
-    function startNewCycle() external {}
+    function startNewCycle() external override {}
 
-    function getBlocksUntilNextCycle() external view returns (uint256) {
+    function getBlocksUntilNextCycle() external view override returns (uint256) {
         return 0;
     }
 
-    function getCycleProgress() external view returns (uint256) {
+    function getCycleProgress() external view override returns (uint256) {
         return 100;
     }
 
-    function updateCycleLength(uint256) external {}
+    function updateCycleLength(uint256) external override {}
 
-    function lastCycleStartBlock() external view returns (uint256) {
+    function lastCycleStartBlock() external view override returns (uint256) {
         return block.number;
     }
 
-    function cycleLength() external view returns (uint256) {
+    function cycleLength() external view override returns (uint256) {
         return 1;
     }
 }
