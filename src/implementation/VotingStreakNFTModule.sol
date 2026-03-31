@@ -200,8 +200,20 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
         // Condition 1: Streak just reached 10 and no mint is pending
         if (activity.streak == 10 && !activity.mintPending) {
             activity.mintPending = true;  // Mark mint attempt as begun
-            if (_attemptMint(user)) {
-                // Mint succeeded - no retry needed
+            // Attempt mint with graceful error handling
+            bool mintSuccess = false;
+            if (address($.nftContract) != address(0)) {
+                try $.nftContract.mint(user) {
+                    mintSuccess = true;
+                } catch Error(string memory reason) {
+                    emit NFTMintFailed(user, bytes(reason));
+                } catch (bytes memory lowLevelData) {
+                    emit NFTMintFailed(user, lowLevelData);
+                }
+            } else {
+                emit NFTMintFailed(user, bytes("NFT contract not set"));
+            }
+            if (mintSuccess) {
                 activity.mintPending = false;
             }
             // If mint failed, mintPending stays true for retry in next cycle when streak > 10
@@ -209,36 +221,24 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
         // Condition 2: Mint is pending and streak continues beyond 10
         else if (activity.mintPending && activity.streak > 10) {
             // Retry minting in subsequent cycles while streak continues
-            if (_attemptMint(user)) {
-                // Mint succeeded on retry
+            bool mintSuccess = false;
+            if (address($.nftContract) != address(0)) {
+                try $.nftContract.mint(user) {
+                    mintSuccess = true;
+                } catch Error(string memory reason) {
+                    emit NFTMintFailed(user, bytes(reason));
+                } catch (bytes memory lowLevelData) {
+                    emit NFTMintFailed(user, lowLevelData);
+                }
+            } else {
+                emit NFTMintFailed(user, bytes("NFT contract not set"));
+            }
+            if (mintSuccess) {
                 activity.mintPending = false;
             }
             // If mint failed again, mintPending stays true for next retry opportunity
         }
     }
 
-    /// @dev Attempts to mint an NFT for a user with graceful error handling
-    /// @param user The user address to mint for
-    /// @return success True if mint succeeded, false otherwise
-    function _attemptMint(address user) internal returns (bool success) {
-        VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
-
-        // Safety check: ensure NFT contract is configured
-        if (address($.nftContract) == address(0)) {
-            emit NFTMintFailed(user, bytes("NFT contract not set"));
-            return false;
-        }
-
-        try $.nftContract.mint(user) {
-            return true;
-        } catch Error(string memory reason) {
-            // Standard revert with reason string
-            emit NFTMintFailed(user, bytes(reason));
-            return false;
-        } catch (bytes memory lowLevelData) {
-            // Low-level revert or panic
-            emit NFTMintFailed(user, lowLevelData);
-            return false;
-        }
-    }
 }
+
