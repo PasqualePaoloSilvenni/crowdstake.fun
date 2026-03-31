@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /// @title Interface for the Crowdstake NFT contract
-/// @dev Extends IERC721 by adding the mint and burn functions required by the module.
+/// @dev Extends IERC721 by adding mint and burn functions used by the Crowdstake distribution strategy and other external consumers.
 interface ICrowdstakeNFT is IERC721 {
     /// @notice Mints a new NFT to the specified address.
     /// @param to The address that will receive the NFT.
