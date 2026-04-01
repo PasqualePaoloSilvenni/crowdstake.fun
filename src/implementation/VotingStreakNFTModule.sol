@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {BasisPointsVotingModule} from "../base/BasisPointsVotingModule.sol";
-import {AbstractVotingModule} from "../abstract/AbstractVotingModule.sol";
 import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
 import {ICrowdstakeNFT} from "../interfaces/ICrowdstakeNFT.sol";
 
@@ -17,11 +16,9 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     /// @notice User voting activity state for streak tracking
     /// @param streak Current consecutive voting streak count
     /// @param lastVoteCycle Last cycle in which the user successfully voted
-    /// @param mintPending Flag indicating whether an NFT mint is pending retry for the current streak
     struct UserActivity {
         uint256 streak;
         uint256 lastVoteCycle;
-        bool mintPending;
     }
 
     /// @custom:storage-location erc7201:crowdstake.storage.VotingStreakNFTModule
@@ -53,14 +50,6 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     /// @param newAddress New NFT contract address
     event NFTContractUpdated(address indexed oldAddress, address indexed newAddress);
 
-    /// @notice Emitted when NFT mint fails for a user during graceful degradation
-    /// @param user User whose mint failed
-    /// @param reason Revert data from the failed external call.
-    ///               In `catch Error(string reason)` branches this is the raw UTF-8 bytes of the
-    ///               revert string (i.e. `bytes(reason)`), and in other cases it is the raw
-    ///               low-level revert payload as returned by the EVM.
-    event NFTMintFailed(address indexed user, bytes reason);
-
     /// @notice Emitted when a user's voting streak is updated
     /// @param user User whose streak was updated
     /// @param newStreak The new streak count after this vote
@@ -79,15 +68,14 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     /// @param user The user address to query
     /// @return streak Current consecutive voting streak
     /// @return lastVoteCycle Last cycle in which the user successfully voted
-    /// @return mintPending Whether an NFT mint is pending for the current streak
     function userActivity(address user)
         external
         view
-        returns (uint256 streak, uint256 lastVoteCycle, bool mintPending)
+        returns (uint256 streak, uint256 lastVoteCycle)
     {
         VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
         UserActivity storage activity = $.userActivity[user];
-        return (activity.streak, activity.lastVoteCycle, activity.mintPending);
+        return (activity.streak, activity.lastVoteCycle);
     }
 
     // ============ Initialization ============
@@ -165,7 +153,7 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
     // ============ Internal Streak Logic ============
 
-    /// @dev Updates a user's voting streak and manages the mint retry state machine
+    /// @dev Updates a user's voting streak and mints an NFT when streak reaches 10
     /// @param user The user whose streak should be updated
     /// @param currentCycle The current cycle number
     function _updateVotingStreak(address user, uint256 currentCycle) internal {
@@ -186,9 +174,8 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
                 ++activity.streak;
             }
         } else {
-            // Streak broken (gap of 1 or more cycles) - reset to 1 and clear pending mint
+            // Streak broken (gap of 1 or more cycles) - reset to 1
             activity.streak = 1;
-            activity.mintPending = false;
         }
 
         // Record this cycle as the last voted cycle
@@ -196,47 +183,9 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
         emit StreakUpdated(user, activity.streak, currentCycle);
 
-        // Mint & Retry Mechanism:
-        // Condition 1: Streak just reached 10 and no mint is pending
-        if (activity.streak == 10 && !activity.mintPending) {
-            activity.mintPending = true;  // Mark mint attempt as begun
-            // Attempt mint with graceful error handling
-            bool mintSuccess = false;
-            if (address($.nftContract) != address(0)) {
-                try $.nftContract.mint(user) {
-                    mintSuccess = true;
-                } catch Error(string memory reason) {
-                    emit NFTMintFailed(user, bytes(reason));
-                } catch (bytes memory lowLevelData) {
-                    emit NFTMintFailed(user, lowLevelData);
-                }
-            } else {
-                emit NFTMintFailed(user, bytes("NFT contract not set"));
-            }
-            if (mintSuccess) {
-                activity.mintPending = false;
-            }
-            // If mint failed, mintPending stays true for retry in next cycle when streak > 10
-        }
-        // Condition 2: Mint is pending and streak continues beyond 10
-        else if (activity.mintPending && activity.streak > 10) {
-            // Retry minting in subsequent cycles while streak continues
-            bool mintSuccess = false;
-            if (address($.nftContract) != address(0)) {
-                try $.nftContract.mint(user) {
-                    mintSuccess = true;
-                } catch Error(string memory reason) {
-                    emit NFTMintFailed(user, bytes(reason));
-                } catch (bytes memory lowLevelData) {
-                    emit NFTMintFailed(user, lowLevelData);
-                }
-            } else {
-                emit NFTMintFailed(user, bytes("NFT contract not set"));
-            }
-            if (mintSuccess) {
-                activity.mintPending = false;
-            }
-            // If mint failed again, mintPending stays true for next retry opportunity
+        // NFT Minting: Mint an NFT when streak reaches exactly 10 (and multiples thereafter)
+        if (activity.streak == 10) {
+            $.nftContract.mint(user);
         }
     }
 
