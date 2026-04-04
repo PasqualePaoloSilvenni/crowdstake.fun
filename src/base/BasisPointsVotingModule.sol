@@ -107,7 +107,6 @@ contract BasisPointsVotingModule is AbstractVotingModule {
     /// @param signature EIP-712 signature authorizing this vote
     function castVoteWithSignature(address voter, uint256[] calldata points, uint256 nonce, bytes calldata signature)
         external
-        virtual
     {
         _castSingleVote(voter, points, nonce, signature);
     }
@@ -124,7 +123,7 @@ contract BasisPointsVotingModule is AbstractVotingModule {
         uint256[][] calldata points,
         uint256[] calldata nonces,
         bytes[] calldata signatures
-    ) external virtual {
+    ) external {
         // Validate array lengths match
         if (voters.length != points.length) revert ArrayLengthMismatch();
         if (voters.length != nonces.length) revert ArrayLengthMismatch();

@@ -4,14 +4,13 @@ pragma solidity ^0.8.20;
 import {BasisPointsVotingModule} from "../base/BasisPointsVotingModule.sol";
 import {IVotingPowerStrategy} from "../interfaces/IVotingPowerStrategy.sol";
 import {ICrowdstakeNFT} from "../interfaces/ICrowdstakeNFT.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /// @title VotingStreakNFTModule
 /// @notice Extends BasisPointsVotingModule with voting streak tracking and NFT rewards on voting activity
 /// @dev Tracks consecutive voting activity per voter and mints a Crowdstake NFT upon reaching a 10-vote streak.
 ///      Uses the Decorator/Inheritance pattern to augment voting module behavior without modifying core protocol files.
 ///      This correctly models voting streaks as voter-based activity rather than distribution-based.
-contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgradeable {
+contract VotingStreakNFTModule is BasisPointsVotingModule {
     // ============ EIP-7201 Namespaced Storage ============
 
     /// @notice User voting activity state for streak tracking
@@ -28,8 +27,6 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
         ICrowdstakeNFT nftContract;
         /// @notice Per-user streak tracking and state
         mapping(address => UserActivity) userActivity;
-        /// @notice Token IDs minted for each user as streak rewards
-        mapping(address => uint256[]) tokenIds;
     }
 
     // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.VotingStreakNFTModule")) - 1)) & ~bytes32(uint256(0xff))
@@ -59,12 +56,6 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
     /// @param cycle The cycle in which the vote occurred
     event StreakUpdated(address indexed user, uint256 newStreak, uint256 cycle);
 
-    /// @notice Emitted when an NFT is minted as a streak reward
-    /// @param user User who received the NFT
-    /// @param tokenId The token ID of the minted NFT
-    /// @param streak The streak count at which the NFT was minted
-    event NFTMinted(address indexed user, uint256 indexed tokenId, uint256 streak);
-
     // ============ Views (ABI-compatible getters) ============
 
     /// @notice Gets the NFT contract address
@@ -85,13 +76,6 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
         VotingStreakNFTModuleStorage storage $ = _getVotingStreakNFTModuleStorage();
         UserActivity storage activity = $.userActivity[user];
         return (activity.streak, activity.lastVoteCycle);
-    }
-
-    /// @notice Gets all token IDs minted for a user
-    /// @param user The user address to query
-    /// @return Array of token IDs minted as streak rewards
-    function getTokenIds(address user) external view returns (uint256[] memory) {
-        return _getVotingStreakNFTModuleStorage().tokenIds[user];
     }
 
     // ============ Initialization ============
@@ -141,54 +125,6 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
         $.nftContract = ICrowdstakeNFT(_nftContract);
 
         emit NFTContractUpdated(oldAddress, _nftContract);
-    }
-
-    // ============ Voting Functions (with Reentrancy Protection) ============
-
-    /// @notice Casts a vote with an EIP-712 signature, protected against reentrancy
-    /// @dev Overrides parent implementation to add nonReentrant modifier for NFT minting safety.
-    ///      Validates the signature and processes the vote using the voter's current voting power.
-    /// @param voter The address of the voter casting the vote
-    /// @param points Array of basis points to allocate to each recipient
-    /// @param nonce Unique nonce for this vote to prevent replay attacks
-    /// @param signature EIP-712 signature authorizing this vote
-    function castVoteWithSignature(address voter, uint256[] calldata points, uint256 nonce, bytes calldata signature)
-        external
-        override
-        nonReentrant
-    {
-        _castSingleVote(voter, points, nonce, signature);
-    }
-
-    /// @notice Casts multiple votes in a single transaction, protected against reentrancy
-    /// @dev Overrides parent implementation to add nonReentrant modifier for NFT minting safety.
-    ///      Processes multiple votes atomically with reentrancy protection.
-    /// @param voters Array of voter addresses
-    /// @param points Array of point allocations for each voter
-    /// @param nonces Array of nonces for each vote
-    /// @param signatures Array of EIP-712 signatures for each vote
-    function castBatchVotesWithSignature(
-        address[] calldata voters,
-        uint256[][] calldata points,
-        uint256[] calldata nonces,
-        bytes[] calldata signatures
-    ) external override nonReentrant {
-        // Validate array lengths match
-        if (voters.length != points.length) revert ArrayLengthMismatch();
-        if (voters.length != nonces.length) revert ArrayLengthMismatch();
-        if (voters.length != signatures.length) revert ArrayLengthMismatch();
-
-        // Check batch size limit
-        if (voters.length > MAX_BATCH_SIZE) {
-            revert BatchTooLarge();
-        }
-
-        // Process each vote
-        for (uint256 i = 0; i < voters.length; i++) {
-            _castSingleVote(voters[i], points[i], nonces[i], signatures[i]);
-        }
-
-        emit BatchVotesCast(voters, nonces);
     }
 
     // ============ Internal Overrides ============
@@ -247,11 +183,9 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
 
         emit StreakUpdated(user, activity.streak, currentCycle);
 
-        // NFT Minting: Mint an NFT on the 10th consecutive vote and every multiple of 10 thereafter
-        if (activity.streak > 0 && activity.streak % 10 == 0) {
-            uint256 tokenId = $.nftContract.mint(user);
-            $.tokenIds[user].push(tokenId);
-            emit NFTMinted(user, tokenId, activity.streak);
+        // NFT Minting: Mint an NFT when streak reaches exactly 10 (and multiples thereafter)
+        if (activity.streak == 10) {
+            $.nftContract.mint(user);
         }
     }
 

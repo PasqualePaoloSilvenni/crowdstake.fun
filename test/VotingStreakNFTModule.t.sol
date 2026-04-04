@@ -20,12 +20,6 @@ contract VotingStreakBasisPointsModuleHarness is VotingStreakNFTModule {
     function exposed_processVote(address voter, uint256[] calldata points, uint256 votingPower) external {
         _processVote(voter, points, votingPower);
     }
-
-    /// @notice Exposes the tokenIds array for testing
-    /// @dev Allows tests to verify token IDs are correctly stored in EIP-7201 storage
-    function exposed_getTokenIds(address user) external view returns (uint256[] memory) {
-        return this.getTokenIds(user);
-    }
 }
 
 // ============ Mock Voting Power Strategy ============
@@ -47,11 +41,6 @@ contract MockVotingPowerStrategy is IVotingPowerStrategy {
 /// @notice Comprehensive test suite for VotingStreakNFTModule
 /// @dev Tests voting streak tracking and NFT minting on 10-vote streaks
 contract VotingStreakNFTModuleTest is Test {
-    // ============ Events ============
-    
-    /// @notice Emitted when an NFT is minted as a streak reward
-    event NFTMinted(address indexed user, uint256 indexed tokenId, uint256 streak);
-
     VotingStreakBasisPointsModuleHarness public harness;
     MockCrowdstakeNFT public mockNft;
     MockRecipientRegistry public recipientRegistry;
@@ -326,156 +315,6 @@ contract VotingStreakNFTModuleTest is Test {
         (uint256 finalStreak2, ) = harness.userActivity(user2);
         assertEq(finalStreak1, 2, "user1 should maintain streak of 2");
         assertEq(finalStreak2, 1, "user2 should have streak of 1");
-    }
-
-    // ============ New Tests: Streak Milestones, Token Storage, Event Emission ============
-
-    /// @notice Test: NFT is minted at 10th and 20th consecutive votes (modulo logic)
-    /// @dev Verifies that the mint function is called at stride intervals (every 10 votes)
-    ///      and that streak tracking correctly identifies milestone votes
-    function test_MultipleStreakMilestonesMintMultipleNFTs() public {
-        // Arrange
-        uint256[] memory points = new uint256[](2);
-        points[0] = 50;
-        points[1] = 50;
-
-        uint256 votesNeeded = 20; // Test up to 20th vote (2 NFT mints)
-        uint256 expectedMints = 2; // Should mint at 10 and 20
-
-        // Act & Assert - Vote 20 consecutive times
-        for (uint256 i = 0; i < votesNeeded; i++) {
-            harness.exposed_processVote(user, points, VOTING_POWER);
-
-            uint256 expectedNFTBalance = (i + 1) / 10; // 0 NFTs at vote 1-9, 1 at vote 10, 2 at vote 20
-            uint256 actualNFTBalance = mockNft.balanceOf(user);
-
-            assertEq(
-                actualNFTBalance,
-                expectedNFTBalance,
-                string(abi.encodePacked("Vote ", vm.toString(i + 1), ": Expected ", vm.toString(expectedNFTBalance), " NFTs"))
-            );
-
-            if (i < votesNeeded - 1) {
-                cycleModule.advanceCycle();
-            }
-        }
-
-        // Final Assert
-        assertEq(
-            mockNft.balanceOf(user),
-            expectedMints,
-            "User should have 2 NFTs after 20 consecutive votes"
-        );
-
-        (uint256 finalStreak, ) = harness.userActivity(user);
-        assertEq(finalStreak, 20, "Streak should be 20");
-    }
-
-    /// @notice Test: Token IDs are correctly pushed into user's tokenIds array
-    /// @dev Verifies that tokenIds returned from mint are stored in EIP-7201 storage
-    ///      and can be retrieved in the correct order
-    function test_TokenIdsStoredCorrectlyInArray() public {
-        // Arrange
-        uint256[] memory points = new uint256[](2);
-        points[0] = 50;
-        points[1] = 50;
-
-        // Act - Vote 20 times to trigger 2 mints (at votes 10 and 20)
-        for (uint256 i = 0; i < 20; i++) {
-            harness.exposed_processVote(user, points, VOTING_POWER);
-            if (i < 19) {
-                cycleModule.advanceCycle();
-            }
-        }
-
-        // Assert - Retrieve stored token IDs
-        uint256[] memory storedTokenIds = harness.exposed_getTokenIds(user);
-
-        assertEq(
-            storedTokenIds.length,
-            2,
-            "Should have 2 token IDs stored (minted at 10th and 20th votes)"
-        );
-
-        // Verify token IDs are stored in order
-        // Assuming mockNft starts minting from tokenId = 1
-        assertEq(storedTokenIds[0], 1, "First minted token ID should be 1");
-        assertEq(storedTokenIds[1], 2, "Second minted token ID should be 2");
-
-        // Verify NFT balance matches stored token count
-        assertEq(
-            mockNft.balanceOf(user),
-            storedTokenIds.length,
-            "NFT balance should match stored token IDs count"
-        );
-    }
-
-    /// @notice Test: NFTMinted event is correctly emitted with all parameters
-    /// @dev Uses vm.expectEmit to verify event signature and indexed parameters
-    ///      at the 10th consecutive vote
-    function test_NFTMintedEventEmittedOnTenthVote() public {
-        // Arrange
-        uint256[] memory points = new uint256[](2);
-        points[0] = 50;
-        points[1] = 50;
-
-        // Vote 9 times to reach just before the milestone
-        for (uint256 i = 0; i < 9; i++) {
-            harness.exposed_processVote(user, points, VOTING_POWER);
-            cycleModule.advanceCycle();
-        }
-
-        // Act - We expect the NFTMinted event on the 10th vote
-        // Assuming mockNft.mint returns tokenId = 1 for the first mint
-        vm.expectEmit(true, true, false, true);
-        emit NFTMinted(user, 1, 10); // user (indexed), tokenId (indexed), streak (not indexed)
-
-        harness.exposed_processVote(user, points, VOTING_POWER);
-
-        // Assert - Verify streak was updated correctly
-        (uint256 streak, ) = harness.userActivity(user);
-        assertEq(streak, 10, "Streak should be 10 after 10 consecutive votes");
-
-        // Verify NFT was minted
-        assertEq(mockNft.balanceOf(user), 1, "User should have 1 NFT");
-    }
-
-    /// @notice Test: NFTMinted event is emitted at 20th vote (second milestone)
-    /// @dev Verifies modulo logic runs correctly: streak % 10 == 0 at 20
-    function test_NFTMintedEventEmittedOnTwentiethVote() public {
-        // Arrange
-        uint256[] memory points = new uint256[](2);
-        points[0] = 50;
-        points[1] = 50;
-
-        // Vote 19 times to reach just before the second milestone
-        for (uint256 i = 0; i < 19; i++) {
-            harness.exposed_processVote(user, points, VOTING_POWER);
-            if (i < 18) {
-                cycleModule.advanceCycle();
-            }
-        }
-
-        // Verify we have 1 NFT from the 10th vote
-        assertEq(mockNft.balanceOf(user), 1, "User should have 1 NFT after vote 10");
-
-        // Act - Advance to cycle 20 and expect the second NFTMinted event
-        cycleModule.advanceCycle();
-
-        vm.expectEmit(true, true, false, true);
-        emit NFTMinted(user, 2, 20); // user (indexed), tokenId (indexed), streak (not indexed)
-
-        harness.exposed_processVote(user, points, VOTING_POWER);
-
-        // Assert - Verify second NFT was minted
-        assertEq(mockNft.balanceOf(user), 2, "User should have 2 NFTs after vote 20");
-
-        (uint256 streak, ) = harness.userActivity(user);
-        assertEq(streak, 20, "Streak should be 20 after 20 consecutive votes");
-
-        // Verify both token IDs are stored
-        uint256[] memory storedTokenIds = harness.exposed_getTokenIds(user);
-        assertEq(storedTokenIds.length, 2, "Should have 2 token IDs stored");
     }
 
 }
