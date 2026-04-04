@@ -27,6 +27,8 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
         ICrowdstakeNFT nftContract;
         /// @notice Per-user streak tracking and state
         mapping(address => UserActivity) userActivity;
+        /// @notice Token IDs minted for each user as streak rewards
+        mapping(address => uint256[]) tokenIds;
     }
 
     // keccak256(abi.encode(uint256(keccak256("crowdstake.storage.VotingStreakNFTModule")) - 1)) & ~bytes32(uint256(0xff))
@@ -55,6 +57,12 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
     /// @param newStreak The new streak count after this vote
     /// @param cycle The cycle in which the vote occurred
     event StreakUpdated(address indexed user, uint256 newStreak, uint256 cycle);
+
+    /// @notice Emitted when an NFT is minted as a streak reward
+    /// @param user User who received the NFT
+    /// @param tokenId The token ID of the minted NFT
+    /// @param streak The streak count at which the NFT was minted
+    event NFTMinted(address indexed user, uint256 indexed tokenId, uint256 streak);
 
     // ============ Views (ABI-compatible getters) ============
 
@@ -185,7 +193,9 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
         // NFT Minting: Mint an NFT on the 10th consecutive vote and every multiple of 10 thereafter
         if (activity.streak > 0 && activity.streak % 10 == 0) {
-            $.nftContract.mint(user);
+            uint256 tokenId = $.nftContract.mint(user);
+            $.tokenIds[user].push(tokenId);
+            emit NFTMinted(user, tokenId, activity.streak);
         }
     }
 
