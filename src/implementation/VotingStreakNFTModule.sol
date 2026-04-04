@@ -87,6 +87,13 @@ contract VotingStreakNFTModule is BasisPointsVotingModule, ReentrancyGuardUpgrad
         return (activity.streak, activity.lastVoteCycle);
     }
 
+    /// @notice Gets all token IDs minted for a user
+    /// @param user The user address to query
+    /// @return Array of token IDs minted as streak rewards
+    function getTokenIds(address user) external view returns (uint256[] memory) {
+        return _getVotingStreakNFTModuleStorage().tokenIds[user];
+    }
+
     // ============ Initialization ============
 
     /// @notice Initializes the voting streak NFT module
