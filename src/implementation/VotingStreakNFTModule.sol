@@ -183,8 +183,8 @@ contract VotingStreakNFTModule is BasisPointsVotingModule {
 
         emit StreakUpdated(user, activity.streak, currentCycle);
 
-        // NFT Minting: Mint an NFT when streak reaches exactly 10 (and multiples thereafter)
-        if (activity.streak == 10) {
+        // NFT Minting: Mint an NFT on the 10th consecutive vote and every multiple of 10 thereafter
+        if (activity.streak > 0 && activity.streak % 10 == 0) {
             $.nftContract.mint(user);
         }
     }
